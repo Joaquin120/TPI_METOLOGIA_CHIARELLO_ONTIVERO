@@ -124,7 +124,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ---
 
 ### [C-02] `persistencia-sqlite`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-03 en `openspec/changes/archive/2026-11-03-c-02-persistencia-sqlite/`
 - **Scope**: Salida de la lista en memoria (`ServicioTurnos._turnos`) y persistencia real con repositorios
   - Migración 001 (SQLite, `D-04`): tablas `tenant`, `profesional`, `sillon`, `paciente`, `turno` con `tenant_id`, FKs, `estado` como enum y campos `fecha_hora_inicio` / `fecha_hora_fin`
   - Repositorios: `RepositorioTurnos`, `RepositorioProfesionales`, `RepositorioSillones`, `RepositorioPacientes` — todos filtran por `tenant_id` (`RN-05`)
@@ -383,7 +383,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 Orden de ejecución planificado (pendiente):
 
 1. ~~`C-01` **cancelacion-y-estados-turno**~~ ✔ completado (2026-11-03)
-2. `C-02` **persistencia-sqlite**
+2. ~~`C-02` **persistencia-sqlite**~~ ✔ completado (2026-11-03)
 3. `C-03` **capa-api-desacoplada**
 4. `C-04` auth-rbac-tenancy
 5. `C-05` endpoints-turnos · `C-06` endpoints-recursos · `C-07` gestion-pacientes (paralelo)
@@ -420,7 +420,7 @@ Orden de ejecución planificado (pendiente):
 | ID | Change | FASE | Dependencias | Governance | Estado |
 |----|--------|------|--------------|------------|--------|
 | C-01 | cancelacion-y-estados-turno | 0 · Núcleo del dominio | ninguna | MEDIO | `[x]` |
-| C-02 | persistencia-sqlite | 0 · Núcleo del dominio | C-01 | CRITICO | `[ ]` |
+| C-02 | persistencia-sqlite | 0 · Núcleo del dominio | C-01 | CRITICO | `[x]` |
 | C-03 | capa-api-desacoplada | 0 · Núcleo del dominio | C-02 | ALTO | `[ ]` |
 | C-04 | auth-rbac-tenancy | 1 · Acceso y tenancy | C-03 | CRITICO | `[ ]` |
 | C-05 | endpoints-turnos | 2 · Endpoints de agenda | C-04 | MEDIO | `[ ]` |

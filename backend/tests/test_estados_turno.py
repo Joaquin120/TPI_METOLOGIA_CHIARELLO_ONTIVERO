@@ -83,7 +83,7 @@ def _sembrar(servicio: ServicioTurnos, estado: str) -> Turno:
         paciente="Paciente Ficticio",
         estado=estado,
     )
-    servicio._turnos.append(turno)
+    servicio._repositorio.agregar(turno)
     return turno
 
 

@@ -10,12 +10,17 @@ CONFIRMADO = "CONFIRMADO"
 CANCELADO = "CANCELADO"
 COMPLETADO = "COMPLETADO"
 
+# Estados que siguen bloqueando profesional y sillón en `agendar_turno()`
+# (RN-04: al cancelar/liberarse, el turno deja de ser activo) — design D4/D5.
+ESTADOS_ACTIVOS = frozenset({PENDIENTE, CONFIRMADO})
+
 
 @dataclass(frozen=True)
 class Profesional:
     """Profesional de la salud que atiende turnos."""
 
     nombre: str
+    id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -23,6 +28,7 @@ class Sillon:
     """Sillón/box odontológico en el que se realiza la atención."""
 
     nombre: str
+    id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -36,3 +42,4 @@ class Turno:
     hora_fin: str
     paciente: str
     estado: str = CONFIRMADO
+    id: int | None = None
