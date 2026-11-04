@@ -24,11 +24,62 @@ from src.domain.services import ServicioTurnos
 from src.repositories.turnos_memoria import RepositorioTurnosEnMemoria
 
 
-def test_servicio_usa_repositorio_en_memoria_por_defecto() -> None:
-    """ServicioTurnos sin argumentos inicializa con RepositorioTurnosEnMemoria."""
-    servicio = ServicioTurnos()
+def test_servicio_exige_repositorio() -> None:
+    """ServicioTurnos ya no tiene repositorio por defecto: sin argumento es TypeError."""
+    with pytest.raises(TypeError):
+        ServicioTurnos()  # type: ignore[call-arg]
+
+
+def test_servicio_acepta_adaptador_en_memoria() -> None:
+    """Triangulación: con el adaptador en memoria explícito el servicio queda operativo."""
+    repo = RepositorioTurnosEnMemoria()
+    servicio = ServicioTurnos(repo)
     assert isinstance(servicio._repositorio, RepositorioTurnosEnMemoria)
     assert isinstance(servicio._repositorio, PuertoTurnos)
+    assert servicio.turnos_registrados() == []
+
+
+def test_servicio_acepta_doble_de_prueba_del_puerto() -> None:
+    """Triangulación: acepta cualquier objeto que implemente `PuertoTurnos`."""
+
+    class DoblePuerto:
+        def __init__(self) -> None:
+            self.turnos: list[Turno] = []
+            self.consultas: list[tuple] = []
+
+        def guardar(self, turno: Turno) -> Turno:
+            self.turnos.append(turno)
+            return turno
+
+        def actualizar(self, turno: Turno) -> Turno:
+            self.turnos.append(turno)
+            return turno
+
+        def listar(self) -> list[Turno]:
+            return list(self.turnos)
+
+        def agregar(self, turno: Turno) -> None:
+            self.turnos.append(turno)
+
+        def buscar_activos_solapables(self, **_kwargs) -> list[Turno]:
+            self.consultas.append(tuple(_kwargs))
+            return []
+
+    doble = DoblePuerto()
+    servicio = ServicioTurnos(doble)
+    turno = servicio.agendar_turno(
+        paciente="Paciente Ficticio",
+        fecha="2026-11-01",
+        hora_inicio="10:00",
+        hora_fin="10:30",
+        profesional=Profesional(nombre="Dr. Ejemplo"),
+        sillon=Sillon(nombre="Sillón 1"),
+    )
+
+    assert turno in doble.turnos
+    assert servicio.turnos_registrados() == [turno]
+    assert len(doble.consultas) == 1
+
 
 
 def test_inyeccion_de_repositorio_personalizado() -> None:

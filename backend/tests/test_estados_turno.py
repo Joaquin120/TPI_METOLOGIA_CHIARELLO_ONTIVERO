@@ -21,6 +21,7 @@ from src.domain.models import (
     Turno,
 )
 from src.domain.services import ServicioTurnos
+from src.repositories.turnos_memoria import RepositorioTurnosEnMemoria
 
 
 def test_constantes_de_estado_disponibles() -> None:
@@ -99,7 +100,7 @@ def _sembrar_pendiente(servicio: ServicioTurnos) -> Turno:
 
 def test_confirmar_pendiente_pasa_a_confirmado() -> None:
     """Escenario 'Confirmación de un turno pendiente': PENDIENTE → CONFIRMADO."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     pendiente = _sembrar_pendiente(servicio)
 
     confirmado = servicio.confirmar(pendiente)
@@ -116,7 +117,7 @@ def test_confirmar_pendiente_pasa_a_confirmado() -> None:
 
 def test_cancelar_confirmado_pasa_a_cancelado() -> None:
     """Cancelar un turno CONFIRMADO lo lleva a CANCELADO y lo conserva registrado."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = _agendar(servicio)
 
     cancelado = servicio.cancelar(turno)
@@ -131,7 +132,7 @@ def test_cancelar_confirmado_pasa_a_cancelado() -> None:
 
 def test_completar_confirmado_pasa_a_completado() -> None:
     """Escenario 'Finalización de un turno confirmado': CONFIRMADO → COMPLETADO."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = _agendar(servicio)
 
     completado = servicio.completar(turno)
@@ -151,7 +152,7 @@ def test_completar_confirmado_pasa_a_completado() -> None:
 
 def test_estado_final_cancelado_no_admite_completar() -> None:
     """Escenario 'Completar un turno cancelado se rechaza': CANCELADO es absorbente."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = _sembrar(servicio, CANCELADO)
 
     with pytest.raises(TransicionInvalidaError):
@@ -163,7 +164,7 @@ def test_estado_final_cancelado_no_admite_completar() -> None:
 
 def test_estado_final_cancelado_no_admite_cancelar() -> None:
     """CANCELADO → CANCELADO también es inválida: no hay transición saliente."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = _sembrar(servicio, CANCELADO)
 
     with pytest.raises(TransicionInvalidaError):
@@ -174,7 +175,7 @@ def test_estado_final_cancelado_no_admite_cancelar() -> None:
 
 def test_estado_final_completado_no_admite_cancelar() -> None:
     """Escenario 'Cancelar un turno completado se rechaza': COMPLETADO es absorbente."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = _sembrar(servicio, COMPLETADO)
 
     with pytest.raises(TransicionInvalidaError):
@@ -185,7 +186,7 @@ def test_estado_final_completado_no_admite_cancelar() -> None:
 
 def test_estado_final_completado_no_admite_completar() -> None:
     """Triangulación: COMPLETADO → COMPLETADO también es inválida."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = _sembrar(servicio, COMPLETADO)
 
     with pytest.raises(TransicionInvalidaError):
@@ -196,7 +197,7 @@ def test_estado_final_completado_no_admite_completar() -> None:
 
 def test_transicion_invalida_describe_estado_y_accion() -> None:
     """El rechazo informa el estado actual y la acción pedida (design D3)."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     _sembrar(servicio, CANCELADO)
 
     with pytest.raises(TransicionInvalidaError) as excinfo:
@@ -209,7 +210,7 @@ def test_transicion_invalida_describe_estado_y_accion() -> None:
 
 def test_confirmar_desde_confirmado_es_invalida() -> None:
     """Triangulación de lista blanca: CONFIRMADO → CONFIRMADO no está en RN-03."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = _agendar(servicio)
 
     with pytest.raises(TransicionInvalidaError):
@@ -225,7 +226,7 @@ def test_confirmar_desde_confirmado_es_invalida() -> None:
 
 def test_liberacion_cancelar_libera_profesional_y_sillon() -> None:
     """Escenario Esperado: al cancelar, ni el profesional ni el sillón quedan bloqueados."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = servicio.agendar_turno(
         paciente="Paciente Ficticio",
         fecha="2026-11-01",
@@ -253,7 +254,7 @@ def test_liberacion_cancelar_libera_profesional_y_sillon() -> None:
 
 def test_liberacion_doble_validacion_otro_profesional_mismo_sillon() -> None:
     """Triangulación: el sillón liberado está libre para OTRO profesional."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = servicio.agendar_turno(
         paciente="Paciente Ficticio",
         fecha="2026-11-01",
@@ -277,7 +278,7 @@ def test_liberacion_doble_validacion_otro_profesional_mismo_sillon() -> None:
 
 def test_liberacion_doble_validacion_mismo_profesional_otro_sillon() -> None:
     """Triangulación: el profesional liberado está libre en OTRO sillón."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = servicio.agendar_turno(
         paciente="Paciente Ficticio",
         fecha="2026-11-01",
@@ -301,7 +302,7 @@ def test_liberacion_doble_validacion_mismo_profesional_otro_sillon() -> None:
 
 def test_liberacion_turno_completado_no_bloquea() -> None:
     """COMPLETADO también deja de ser activo: no bloquea profesional ni sillón."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = servicio.agendar_turno(
         paciente="Paciente Ficticio",
         fecha="2026-11-01",
@@ -326,7 +327,7 @@ def test_liberacion_turno_completado_no_bloquea() -> None:
 
 def test_liberacion_turno_cancelado_se_conserva_como_historial() -> None:
     """Triangulación negativa: el filtro es por activos, no un borrado del historial."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = servicio.agendar_turno(
         paciente="Paciente Ficticio",
         fecha="2026-11-01",
@@ -349,7 +350,7 @@ def test_liberacion_re_reserva_contigua_en_t_fin() -> None:
     Red de seguridad: debe pasar desde ya, sin el cambio de la task 5.3, porque
     `_hay_solapamiento()` ya usa intervalos semiabiertos [inicio, fin).
     """
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = servicio.agendar_turno(
         paciente="Paciente Ficticio",
         fecha="2026-11-01",

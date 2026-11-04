@@ -1,0 +1,126 @@
+{
+  "version": 5,
+  "step": "done",
+  "owner": "active-orchestrator",
+  "discovery": {
+    "created_by": "discovery-research",
+    "sources_file": "docs/discovery/informe-discovery.md",
+    "competitors": [
+      {
+        "name": "Clinic Cloud",
+        "notes_file": "docs/discovery/sources/clinic-cloud.md"
+      },
+      {
+        "name": "Dasiclinic",
+        "notes_file": "docs/discovery/sources/dasiclinic.md"
+      },
+      {
+        "name": "Dentalsoft",
+        "notes_file": "docs/discovery/sources/dentalsoft.md"
+      },
+      {
+        "name": "Dentaltech",
+        "notes_file": "docs/discovery/sources/dentaltech.md"
+      },
+      {
+        "name": "Dentidesk",
+        "notes_file": "docs/discovery/sources/dentidesk.md"
+      },
+      {
+        "name": "Doctoralia",
+        "notes_file": "docs/discovery/sources/doctoralia.md"
+      },
+      {
+        "name": "Medesk",
+        "notes_file": "docs/discovery/sources/medesk.md"
+      },
+      {
+        "name": "Naturalsoft",
+        "notes_file": "docs/discovery/sources/naturalsoft.md"
+      },
+      {
+        "name": "Nubimed",
+        "notes_file": "docs/discovery/sources/nubimed.md"
+      },
+      {
+        "name": "Odontosys",
+        "notes_file": "docs/discovery/sources/odontosys.md"
+      },
+      {
+        "name": "Omnidoc",
+        "notes_file": "docs/discovery/sources/omnidoc.md"
+      },
+      {
+        "name": "Saludtools",
+        "notes_file": "docs/discovery/sources/saludtools.md"
+      }
+    ]
+  },
+  "kb": {
+    "created_by": "kb-creator",
+    "source": "interactive",
+    "files": [
+      "knowledge-base/vision.md",
+      "knowledge-base/description.md",
+      "knowledge-base/actors.md",
+      "knowledge-base/data-models.md",
+      "knowledge-base/business-rules.md",
+      "knowledge-base/features.md",
+      "knowledge-base/flows.md",
+      "knowledge-base/architecture.md",
+      "knowledge-base/decisions.md",
+      "knowledge-base/open-questions.md"
+    ]
+  },
+  "visual_design": {
+    "mode": null,
+    "status": "not-decided",
+    "note": "design-system no se ejecutó todavía; el primer change visual (C-11+) debe invocarlo para decidir la política una sola vez"
+  },
+  "roadmap": {
+    "created_by": "roadmap-generator",
+    "changes_file": "CHANGES.md"
+  },
+  "skills": {
+    "created_by": "find-skill",
+    "recommended": [],
+    "installed": [
+      "domain-state-matrix-validator"
+    ]
+  },
+  "agents": {
+    "created_by": "agent-instruction",
+    "files": [
+      "AGENTS.md",
+      "CLAUDE.md"
+    ],
+    "reglas_applied": [
+      "Spec First",
+      "Doble validación de recurso (profesional + sillón)",
+      "Privacidad (solo datos sintéticos)",
+      "Suite verde",
+      "Tests contra SQLite real",
+      "Sin secretos en el repo",
+      "Intervalos semiabiertos [inicio, fin)",
+      "Tenant siempre presente",
+      "Conventional Commits",
+      "No buildear/pushear sin pedir"
+    ]
+  },
+  "registry": {
+    "file": null,
+    "status": "missing"
+  },
+  "active_change": {
+    "name": "c-03-api-fastapi",
+    "roadmap_id": "C-03",
+    "roadmap_slug": "capa-api-desacoplada",
+    "path": "openspec/changes/c-03-api-fastapi",
+    "schema": "spec-driven",
+    "phase": "apply",
+    "status": "implementation-complete",
+    "tests": "110 passed, cov 100%",
+    "next_action": "/opsx:archive c-03-api-fastapi",
+    "recorded_at": "2026-11-04"
+  }
+}

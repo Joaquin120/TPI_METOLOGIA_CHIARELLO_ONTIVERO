@@ -18,7 +18,6 @@ from src.domain.models import (
     Turno,
 )
 from src.domain.puertos import PuertoTurnos
-from src.repositories.turnos_memoria import RepositorioTurnosEnMemoria
 
 # Lista blanca de transiciones válidas: (estado_actual, acción) → estado_destino.
 _TRANSICIONES: dict[tuple[str, str], str] = {
@@ -32,10 +31,8 @@ _TRANSICIONES: dict[tuple[str, str], str] = {
 class ServicioTurnos:
     """Registra turnos validando solapamientos por profesional y por sillón de forma independiente."""
 
-    def __init__(self, repositorio: PuertoTurnos | None = None) -> None:
-        self._repositorio: PuertoTurnos = (
-            repositorio if repositorio is not None else RepositorioTurnosEnMemoria()
-        )
+    def __init__(self, repositorio: PuertoTurnos) -> None:
+        self._repositorio: PuertoTurnos = repositorio
 
     def agendar_turno(
         self,

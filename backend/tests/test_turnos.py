@@ -11,6 +11,7 @@ from src.domain.exceptions import (
 )
 from src.domain.models import Profesional, Sillon, Turno
 from src.domain.services import ServicioTurnos
+from src.repositories.turnos_memoria import RepositorioTurnosEnMemoria
 
 
 # ---------------------------------------------------------------------------
@@ -54,7 +55,7 @@ def test_excepciones_de_dominio_son_excepciones() -> None:
 
 def test_escenario_1_creacion_exitosa_sin_conflicto() -> None:
     """El turno se registra con éxito y queda con estado CONFIRMADO."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     turno = servicio.agendar_turno(
         paciente="Paciente A",
         fecha="2026-11-01",
@@ -75,7 +76,7 @@ def test_escenario_1_creacion_exitosa_sin_conflicto() -> None:
 
 def test_escenario_2_rechazo_por_conflicto_de_profesional() -> None:
     """Un solapamiento del profesional lanza SolapamientoProfesionalError aunque cambie el sillón."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     servicio.agendar_turno(
         paciente="Paciente A",
         fecha="2026-11-01",
@@ -102,7 +103,7 @@ def test_escenario_2_rechazo_por_conflicto_de_profesional() -> None:
 
 def test_escenario_3_turnos_contiguos_no_son_solapamiento() -> None:
     """a_fin == b_inicio NO es solapamiento: la reserva se permite."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     servicio.agendar_turno(
         paciente="Paciente A",
         fecha="2026-11-01",
@@ -130,7 +131,7 @@ def test_escenario_3_turnos_contiguos_no_son_solapamiento() -> None:
 
 def test_triangulacion_conflicto_de_sillon_lanza_solapamiento_sillon() -> None:
     """El sillón ocupado por OTRO profesional lanza SolapamientoSillonError."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     servicio.agendar_turno(
         paciente="Paciente A",
         fecha="2026-11-01",
@@ -152,7 +153,7 @@ def test_triangulacion_conflicto_de_sillon_lanza_solapamiento_sillon() -> None:
 
 def test_triangulacion_solape_invertido_es_conflicto() -> None:
     """Un turno nuevo que termina DESPUÉS de iniciar el existente: solapa."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     servicio.agendar_turno(
         paciente="Paciente A",
         fecha="2026-11-01",
@@ -174,7 +175,7 @@ def test_triangulacion_solape_invertido_es_conflicto() -> None:
 
 def test_triangulacion_fechas_diferentes_no_conflictan() -> None:
     """El mismo horario en otra fecha no genera solapamiento."""
-    servicio = ServicioTurnos()
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
     servicio.agendar_turno(
         paciente="Paciente A",
         fecha="2026-11-01",

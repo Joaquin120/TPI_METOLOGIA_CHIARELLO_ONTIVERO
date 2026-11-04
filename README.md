@@ -40,17 +40,120 @@ o
 ```bash
 python3 -m pytest -v
 ```
-> **Nota:** Todos los 8 tests unitarios deben pasar en verde, validando el camino feliz, las excepciones de solapamiento por profesional y sillón, y los turnos contiguos bajo intervalos semiabiertos $[inicio, fin)$.
+> **Nota:** la suite completa debe pasar en verde, validando el camino feliz, las excepciones de solapamiento por profesional y sillón, los turnos contiguos bajo intervalos semiabiertos $[inicio, fin)$, la persistencia SQLite, el desacople del dominio y los endpoints de la API.
+
+---
+
+## API REST (FastAPI)
+
+La capa HTTP vive en `backend/src/api/` y expone un slice vertical bajo `/api/v1`:
+`health`, alta de turnos y listado por tenant. **La API delega la doble validación
+(profesional y sillón) y las transiciones en el dominio**; no reimplementa reglas.
+El dominio (`backend/src/domain/`) no importa FastAPI, Pydantic, SQLite ni
+repositorios (hay un guard test que lo verifica).
+
+### Arranque
+
+Desde `backend/`, con el entorno virtual activado:
+
+```bash
+# 1. Dependencias
+pip install -r requirements.txt
+
+# 2. (Opcional) migrar y sembrar datos sintéticos: 1 tenant, 2 profesionales, 2 sillones
+python -c "from src.api.app import create_app; create_app(sembrar=True)"
+
+# 3. Levantar la API (factoría: no hay `app` global de módulo)
+python -m uvicorn src.api.app:create_app --factory
+```
+
+La base por defecto es `turnos.db` en el directorio de trabajo. Se puede apuntar a
+otra ruta con la variable de entorno `TURNO_DB_PATH` (configuración, sin secretos).
+La factoría `create_app(*, ruta_db=None, tenant_por_defecto=None, sembrar=False)`
+migra al arrancar y siembra solo si `sembrar=True`.
+
+### Tenant
+
+Toda operación de negocio opera dentro de un tenant resuelto explícitamente, con
+esta precedencia:
+
+1. Encabezado `X-Tenant-ID` (entero).
+2. `tenant_por_defecto` pasado a `create_app(...)`.
+3. Variable de entorno `TURNO_TENANT_ID` (leída en la factoría).
+4. Si no se resuelve, o el id no existe en la tabla `tenant` → `400 TENANT_NO_RESUELTO`.
+
+> El header es **provisorio, solo desarrollo/pruebas** y no es un mecanismo de
+> seguridad: `C-04` lo reemplazará por el tenant de la sesión/JWT.
+
+### Endpoints
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/api/v1/health` | Disponibilidad; no requiere tenant ni consulta datos de negocio. |
+| `POST` | `/api/v1/turnos` | Alta de turno; responde `201` con el turno creado. |
+| `GET` | `/api/v1/turnos` | Listado de turnos del tenant resuelto (sin filtros ni paginación en C-03). |
+
+El contrato usa **nombres** de recurso (`paciente`, `profesional`, `sillon`) porque
+el dominio resuelve por nombre dentro del tenant; migrar a `*_id` queda para
+`DP-06`/`C-05`.
+
+```bash
+# Alta (requiere datos sembrados y un tenant válido, p. ej. 1)
+curl -X POST http://127.0.0.1:8000/api/v1/turnos \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: 1" \
+  -d '{"paciente":"Paciente Ficticio","profesional":"Dr. Ejemplo","sillon":"Sillón 1","fecha":"2026-11-01","hora_inicio":"10:00","hora_fin":"10:30"}'
+
+# Listado del tenant
+curl http://127.0.0.1:8000/api/v1/turnos -H "X-Tenant-ID: 1"
+```
+
+Respuesta de turno (alta y cada ítem del listado):
+
+```json
+{
+  "id": 1,
+  "paciente": "Paciente Ficticio",
+  "profesional": "Dr. Ejemplo",
+  "sillon": "Sillón 1",
+  "fecha": "2026-11-01",
+  "hora_inicio": "10:00",
+  "hora_fin": "10:30",
+  "estado": "CONFIRMADO"
+}
+```
+
+### Contrato de error
+
+Todas las fallas usan el mismo envelope:
+
+```json
+{ "error": { "code": "SOLAPAMIENTO_PROFESIONAL", "message": "..." } }
+```
+
+| Origen | HTTP | `error.code` |
+|---|---|---|
+| Profesional ocupado | `409` | `SOLAPAMIENTO_PROFESIONAL` |
+| Sillón ocupado | `409` | `SOLAPAMIENTO_SILLON` |
+| Transición inválida | `409` | `TRANSICION_INVALIDA` |
+| Cuerpo/parámetros inválidos | `422` | `VALIDACION` |
+| Tenant no resoluble o inexistente | `400` | `TENANT_NO_RESUELTO` |
+
+`extra="forbid"` impide enviar `tenant_id` en el cuerpo. No se valida
+`hora_inicio < hora_fin` (pertenece a `RP-01`, abierta).
 
 ---
 
 ## Estructura del Repositorio
 
 * `openspec/`: Estructura metodológica de OpenSpec con especificaciones vigentes (`specs/`) y cambios archivados (`changes/archive/`).
-* `src/domain/`: Lógica de dominio puro en Python (modelos, servicios de validación y excepciones de negocio).
-* `tests/`: Suite de pruebas unitarias automatizadas con `pytest`.
-* `pytest.ini`: Configuración de resolución de módulos para ejecución directa.
-* `requirements.txt`: Dependencias del entorno de testing (`pytest`, `pytest-cov`).
+* `backend/src/domain/`: Lógica de dominio puro en Python (modelos, puertos, servicios y excepciones de negocio).
+* `backend/src/repositories/`: Adaptadores de persistencia (`PuertoTurnos` en memoria y SQLite por tenant).
+* `backend/src/infrastructure/`: Conexión SQLite, migraciones, configuración y seed sintético.
+* `backend/src/api/`: Capa HTTP/JSON (factoría FastAPI, routers, esquemas Pydantic, dependencias y handlers de error).
+* `backend/tests/`: Suite de pruebas automatizadas con `pytest` (dominio, persistencia real y API con `TestClient`).
+* `backend/pytest.ini`: Configuración de resolución de módulos para ejecución directa.
+* `backend/requirements.txt`: Dependencias de testing y de la API (`pytest`, `pytest-cov`, `fastapi`, `pydantic`, `httpx`, `uvicorn`).
 
 ---
 

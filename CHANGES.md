@@ -142,7 +142,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ---
 
 ### [C-03] `capa-api-desacoplada`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-04 en `openspec/changes/archive/2026-11-04-c-03-api-fastapi/`
 - **Scope**: Capa de presentación desacoplada del dominio (puertos y adaptadores) — fin del "desacople de backend"
   - Estructura: `src/api/` (controladores + esquemas), `src/repositories/` (adaptadores), `src/infrastructure/` (config, DB), `src/domain/` intacto (`architecture.md` §9)
   - App FastAPI mínima (o framework según resolución de `DP-01`): factoría que ensambla controlador → servicio de dominio → repositorio
