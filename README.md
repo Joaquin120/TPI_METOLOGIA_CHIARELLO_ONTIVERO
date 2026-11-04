@@ -220,5 +220,3 @@ Agregá este bloque a la configuración del cliente MCP (OpenCode: `opencode.jso
 
 * Joaquín Chiarello
 * Santiago Ontivero
-* Cristian Rodríguez
-* Joseph Oliveros
