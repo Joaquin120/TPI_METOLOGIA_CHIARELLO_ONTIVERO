@@ -40,6 +40,10 @@ o
 ```bash
 python3 -m pytest -v
 ```
+o 
+```powershell
+.\venv\Scripts\Activate.ps1
+```
 > **Nota:** la suite completa debe pasar en verde, validando el camino feliz, las excepciones de solapamiento por profesional y sillón, los turnos contiguos bajo intervalos semiabiertos $[inicio, fin)$, la persistencia SQLite, el desacople del dominio y los endpoints de la API.
 
 ---
