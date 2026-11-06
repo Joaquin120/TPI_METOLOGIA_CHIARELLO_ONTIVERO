@@ -401,8 +401,8 @@ Orden de ejecución planificado (pendiente):
 
 1. ~~`C-01` **cancelacion-y-estados-turno**~~ ✔ completado (2026-11-03)
 2. ~~`C-02` **persistencia-sqlite**~~ ✔ completado (2026-11-03)
-3. `C-03` **capa-api-desacoplada**
-4. `C-04` auth-rbac-tenancy
+3. ~~`C-03` **capa-api-desacoplada**~~ ✔ completado (2026-11-05)
+4. ~~`C-04` auth-rbac-tenancy~~ ✔ completado (2026-11-05)
 5. `C-05` endpoints-turnos · `C-06` endpoints-recursos · `C-07` gestion-pacientes (paralelo)
 6. `C-08` reprogramacion-turno · `C-09` admin-recursos-crud · `C-11` frontend-shell
 7. `C-10` bloqueo-sillon · `C-12` agenda-turnos-ui — **cierre del MVP**
