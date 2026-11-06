@@ -11,13 +11,13 @@ import pytest
 from src.infrastructure.database import abrir_conexion, migrar
 
 
-def test_esquema_001_crea_las_cinco_tablas(tmp_path) -> None:
-    """La migración 001 crea las cinco tablas y sus índices, y es idempotente."""
+def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
+    """Las migraciones 001 y 002 crean las tablas e índices, y son idempotentes."""
     ruta = tmp_path / "esquema.db"
     conexion = abrir_conexion(str(ruta))
     try:
-        assert migrar(conexion) == ["001_init.sql"]
-        # Segunda corrida: la migración ya registrada no se vuelve a aplicar.
+        assert migrar(conexion) == ["001_init.sql", "002_auth.sql"]
+        # Segunda corrida: las migraciones ya registradas no se vuelven a aplicar.
         assert migrar(conexion) == []
 
         tablas = {
@@ -26,13 +26,13 @@ def test_esquema_001_crea_las_cinco_tablas(tmp_path) -> None:
                 "SELECT name FROM sqlite_master WHERE type = 'table'"
             )
         }
-        assert {"tenant", "profesional", "sillon", "paciente", "turno"} <= tablas
+        assert {"tenant", "profesional", "sillon", "paciente", "turno", "usuario"} <= tablas
         assert "schema_migrations" in tablas
 
         aplicadas = conexion.execute(
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [fila[0] for fila in aplicadas] == ["001_init.sql"]
+        assert [fila[0] for fila in aplicadas] == ["001_init.sql", "002_auth.sql"]
 
         # Índice de solapamiento (tenant_id, fecha_hora_inicio) — design D4.
         columnas_indice = [
@@ -42,6 +42,55 @@ def test_esquema_001_crea_las_cinco_tablas(tmp_path) -> None:
             )
         ]
         assert columnas_indice == ["tenant_id", "fecha_hora_inicio"]
+
+        # Índice de usuario (tenant_id, email) — C-04.
+        columnas_indice_usuario = [
+            fila[2]
+            for fila in conexion.execute(
+                "PRAGMA index_info(idx_usuario_tenant_email)"
+            )
+        ]
+        assert columnas_indice_usuario == ["tenant_id", "email"]
+    finally:
+        conexion.close()
+
+
+def test_esquema_002_usuario_restricciones(tmp_path) -> None:
+    """La tabla usuario valida CHECK de rol, UNIQUE(tenant_id, email) y FKs."""
+    ruta = tmp_path / "usuario_integridad.db"
+    conexion = abrir_conexion(str(ruta))
+    try:
+        migrar(conexion)
+        conexion.execute("INSERT INTO tenant (nombre) VALUES ('Clínica Test')")
+        id_tenant = conexion.execute("SELECT id FROM tenant WHERE nombre = 'Clínica Test'").fetchone()[0]
+
+        # Inserción válida
+        conexion.execute(
+            "INSERT INTO usuario (tenant_id, email, password_hash, rol) VALUES (?, ?, ?, ?)",
+            (id_tenant, "admin@test.com", "hash123", "Administrador"),
+        )
+        conexion.commit()
+
+        # UNIQUE (tenant_id, email)
+        with pytest.raises(sqlite3.IntegrityError):
+            conexion.execute(
+                "INSERT INTO usuario (tenant_id, email, password_hash, rol) VALUES (?, ?, ?, ?)",
+                (id_tenant, "admin@test.com", "otrohash", "Recepcionista"),
+            )
+
+        # CHECK (rol IN ('Administrador', 'Recepcionista', 'Profesional'))
+        with pytest.raises(sqlite3.IntegrityError):
+            conexion.execute(
+                "INSERT INTO usuario (tenant_id, email, password_hash, rol) VALUES (?, ?, ?, ?)",
+                (id_tenant, "otro@test.com", "hash", "SuperAdmin"),
+            )
+
+        # FK tenant_id inexistente
+        with pytest.raises(sqlite3.IntegrityError):
+            conexion.execute(
+                "INSERT INTO usuario (tenant_id, email, password_hash, rol) VALUES (9999, ?, ?, ?)",
+                ("nadie@test.com", "hash", "Recepcionista"),
+            )
     finally:
         conexion.close()
 

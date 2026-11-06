@@ -163,14 +163,31 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ## FASE 1 — Acceso y tenancy
 
 ### [C-04] `auth-rbac-tenancy`
-- **Estado**: `[ ]` pendiente
-- **Scope**: Autenticación, roles y resolución de tenant desde la sesión
-  - Resolver en el proposal las decisiones `DP-04` (auth/sesiones) y `DP-03` (aislamiento multi-tenant)
-  - Migración 002: tabla `usuario` con `tenant_id`, `email`, `rol` (`Administrador`, `Recepcionista`, `Profesional`), `profesional_id` opcional
-  - `POST /api/v1/auth/login` — JWT con claims `sub`, `tenant_id`, `rol`; `GET /api/v1/auth/me`
-  - Dependency/mediddleware que resuelve el tenant de la sesión e inyecta el contexto en los repositorios (`RN-05`)
-  - RBAC mínimo según matriz de permisos: recepción opera agenda, admin configura recursos, profesional solo consulta agenda propia
-  - Tests: login OK, token inválido/expirado, fuga de datos entre tenants bloqueada, permisos por rol
+- **Estado**: `[x]` completado — archivado 2026-11-05 en `openspec/changes/archive/2026-11-05-c-04-auth-rbac-tenancy/`
+- **Scope completado**: Autenticación, control de acceso basado en roles (RBAC) y resolución determinista de tenant desde la sesión
+  - Resoluciones arquitectónicas: `DP-03` resuelta confirmando el modelo de base compartida SQLite con discriminador `tenant_id` en todas las tablas y consultas; `DP-04` resuelta mediante autenticación stateless con JWT (HS256) y almacenamiento de contraseñas con PBKDF2-HMAC-SHA256 con salt aleatorio.
+  - Migración 002: script `backend/src/infrastructure/migrations/002_auth.sql` con tabla `usuario` (`tenant_id`, `email`, `password_hash`, `rol`, `profesional_id`, `activo`) e índice único `(tenant_id, email)`.
+  - Adaptador de persistencia: `RepositorioUsuariosSqlite` en `backend/src/repositories/usuarios_sqlite.py` con búsqueda por email/tenant y por identificador.
+  - Semilla sintética actualizada: `backend/src/infrastructure/seed.py` siembra usuarios sintéticos para los 3 roles (`admin@ejemplo.com`, `recepcion@ejemplo.com`, `dr.ejemplo@ejemplo.com`) con credenciales conocidas (`RN-06`).
+  - Endpoints de autenticación: `POST /api/v1/auth/login` (autentica credenciales y emite JWT con claims `sub`, `email`, `tenant_id`, `rol`, `profesional_id`) y `GET /api/v1/auth/me` (perfil del usuario autenticado).
+  - Infraestructura de seguridad y dependencias FastAPI: `backend/src/api/seguridad.py` (hashing y JWT) y `backend/src/api/dependencias.py` con `obtener_usuario_actual` (Bearer token) y `requerir_rol(*roles)` (RBAC).
+  - Resolución no falsificable de tenant: el seam provisorio de `contexto_turnos` fue reemplazado para derivar el `tenant_id` estrictamente del token verificado del usuario autenticado, anulando la manipulación de cabeceras arbitrarias.
+  - Protección de endpoints de turnos: `POST /api/v1/turnos` restringido a roles `Recepcionista` y `Administrador`; `GET /api/v1/turnos` acotado al tenant del usuario; usuarios con rol `Profesional` reciben `403 ACCESO_DENEGADO` al intentar agendar.
+  - Suite de pruebas y cobertura: 130 tests automatizados pasando al 100% en SQLite real con 97% de cobertura general y 100% en `src/domain/`.
+- **Skill propia integrada**: `.atl/skills/validador-trazabilidad-openspec.md`
+  - *Propósito*: Puerta de calidad y auditoría técnica Spec-Driven Development (SDD) para cambios en OpenSpec.
+  - *Validaciones ejecutadas*:
+    1. *Fidelidad normativa*: 14 escenarios de spec probados con pytest con cobertura exhaustiva de códigos HTTP (200, 201, 401, 403, 409, 422) y envelope estable `{"error": {"code": "...", "message": "..."}}`.
+    2. *Pureza de dominio*: 0 dependencias de frameworks o infraestructura en `src/domain/` comprobadas mediante guard tests automatizados (`test_pureza_dominio.py` 5/5).
+    3. *Seguridad y aislamiento*: `tenant_id` derivado obligatoriamente de `ContextoUsuario` y aislamiento inter-tenant demostrado en `test_rbac_tenancy.py`.
+    4. *Sincronización de artefactos*: `tasks.md` (15/15 all_done), roadmap `CHANGES.md` y `.active-orchestrator-state.json`.
+  - *Dictamen*: **APROBADO**.
+- **Herramientas MCP utilizadas en este change**:
+  - Servidor **`engram`**:
+    - `mem_context`: Recuperación del contexto de sesiones previas y estado base del proyecto al iniciar la fase `propose`.
+    - `mem_search`: Búsqueda de precedentes y decisiones en el proyecto (`tpi_metologia_chiarello_ontivero`).
+    - `mem_save`: Persistencia proactiva de observaciones de arquitectura al finalizar `propose` (decisiones `DP-03`/`DP-04`, contratos de spec) y `apply` (evidencia de TDD, 15 tareas completadas, métricas de suite y cobertura).
+    - `mem_judge`: Arbitraje y conciliación de relaciones (`compatible`) entre las observaciones de memoria históricas de C-03 y las nuevas observaciones de C-04.
 - **Dependencias**: `C-03`
 - **Governance**: CRITICO
 - **Leer antes**:

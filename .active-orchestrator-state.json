@@ -85,7 +85,8 @@
     "created_by": "find-skill",
     "recommended": [],
     "installed": [
-      "domain-state-matrix-validator"
+      "domain-state-matrix-validator",
+      "validador-trazabilidad-openspec"
     ]
   },
   "agents": {
@@ -112,15 +113,15 @@
     "status": "missing"
   },
   "active_change": {
-    "name": "c-03-api-fastapi",
-    "roadmap_id": "C-03",
-    "roadmap_slug": "capa-api-desacoplada",
-    "path": "openspec/changes/c-03-api-fastapi",
+    "name": "c-04-auth-rbac-tenancy",
+    "roadmap_id": "C-04",
+    "roadmap_slug": "auth-rbac-tenancy",
+    "path": "openspec/changes/archive/2026-11-05-c-04-auth-rbac-tenancy",
     "schema": "spec-driven",
-    "phase": "apply",
-    "status": "implementation-complete",
-    "tests": "110 passed, cov 100%",
-    "next_action": "/opsx:archive c-03-api-fastapi",
-    "recorded_at": "2026-11-04"
+    "phase": "archive",
+    "status": "archived",
+    "tests": "130 passed, cov 97%",
+    "next_action": "/opsx:propose c-05-endpoints-turnos",
+    "recorded_at": "2026-11-05"
   }
 }

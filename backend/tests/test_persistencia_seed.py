@@ -9,12 +9,13 @@ from src.infrastructure.seed import (
     PROFESIONALES_DEFECTO,
     SILLONES_DEFECTO,
     TENANT_DEFECTO,
+    USUARIOS_DEFECTO,
     sembrar_datos_iniciales,
 )
 
 
 def test_seed_carga_un_tenant_dos_profesionales_y_dos_sillones(tmp_path) -> None:
-    """La semilla crea exactamente 1 tenant, 2 profesionales y 2 sillones con datos sintéticos."""
+    """La semilla crea exactamente 1 tenant, 2 profesionales, 2 sillones y 3 usuarios sintéticos."""
     ruta = tmp_path / "seed_inicial.db"
     conexion = abrir_conexion(str(ruta))
     try:
@@ -40,6 +41,15 @@ def test_seed_carga_un_tenant_dos_profesionales_y_dos_sillones(tmp_path) -> None
             ).fetchall()
         ]
         assert tuple(sillones) == SILLONES_DEFECTO
+
+        usuarios = conexion.execute(
+            "SELECT email, rol, activo FROM usuario ORDER BY email"
+        ).fetchall()
+        assert len(usuarios) == 3
+        emails = [u[0] for u in usuarios]
+        assert "admin@ejemplo.com" in emails
+        assert "recepcion@ejemplo.com" in emails
+        assert "dr.ejemplo@ejemplo.com" in emails
     finally:
         conexion.close()
 
@@ -57,9 +67,11 @@ def test_seed_es_idempotente(tmp_path) -> None:
         cantidad_tenants = conexion.execute("SELECT count(*) FROM tenant").fetchone()[0]
         cantidad_prof = conexion.execute("SELECT count(*) FROM profesional").fetchone()[0]
         cantidad_sillones = conexion.execute("SELECT count(*) FROM sillon").fetchone()[0]
+        cantidad_usuarios = conexion.execute("SELECT count(*) FROM usuario").fetchone()[0]
 
         assert cantidad_tenants == 1
         assert cantidad_prof == 2
         assert cantidad_sillones == 2
+        assert cantidad_usuarios == 3
     finally:
         conexion.close()

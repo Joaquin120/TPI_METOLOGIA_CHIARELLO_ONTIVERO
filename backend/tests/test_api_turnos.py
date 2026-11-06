@@ -13,6 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.app import create_app
+from src.api.seguridad import crear_token_acceso
 from src.infrastructure.database import abrir_conexion
 from src.infrastructure.seed import TENANT_DEFECTO
 
@@ -55,8 +56,14 @@ def _crear_cliente(ruta: Path) -> tuple[TestClient, int]:
     return TestClient(app), _id_tenant(ruta)
 
 
-def _headers(tenant_id: int) -> dict[str, str]:
-    return {"X-Tenant-ID": str(tenant_id)}
+def _headers(tenant_id: int, rol: str = "Recepcionista") -> dict[str, str]:
+    token = crear_token_acceso({
+        "sub": "1",
+        "email": f"recepcion@{tenant_id}.com",
+        "tenant_id": tenant_id,
+        "rol": rol,
+    })
+    return {"Authorization": f"Bearer {token}"}
 
 
 def _contar_turnos(ruta: Path, tenant_id: int) -> int:
@@ -320,3 +327,32 @@ def test_post_valido_de_control_sigue_creando_turno(api) -> None:
 
     assert respuesta.status_code == 201
     assert _contar_turnos(ruta, tenant_id) == 1
+
+
+# ---------------------------------------------------------------------------
+# C-04 — Autenticación y RBAC en endpoints de turnos
+# ---------------------------------------------------------------------------
+
+
+def test_post_sin_autenticacion_devuelve_401(api) -> None:
+    cliente, _tenant_id, ruta = api
+    resp = cliente.post("/api/v1/turnos", json=_payload())
+    assert resp.status_code == 401
+    assert resp.json()["error"]["code"] == "NO_AUTENTICADO"
+    assert _contar_turnos(ruta, 1) == 0
+
+
+def test_get_sin_autenticacion_devuelve_401(api) -> None:
+    cliente, _tenant_id, _ruta = api
+    resp = cliente.get("/api/v1/turnos")
+    assert resp.status_code == 401
+    assert resp.json()["error"]["code"] == "NO_AUTENTICADO"
+
+
+def test_post_rol_profesional_devuelve_403(api) -> None:
+    cliente, tenant_id, ruta = api
+    headers_prof = _headers(tenant_id, rol="Profesional")
+    resp = cliente.post("/api/v1/turnos", json=_payload(), headers=headers_prof)
+    assert resp.status_code == 403
+    assert resp.json()["error"]["code"] == "ACCESO_DENEGADO"
+    assert _contar_turnos(ruta, tenant_id) == 0

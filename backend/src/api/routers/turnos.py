@@ -9,7 +9,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
-from src.api.dependencias import ContextoTurnos, contexto_turnos
+from src.api.dependencias import (
+    ContextoTurnos,
+    ContextoUsuario,
+    contexto_turnos,
+    requerir_rol,
+)
 from src.api.esquemas import TurnoCrear, TurnoRespuesta
 from src.domain.models import Profesional, Sillon
 
@@ -34,6 +39,9 @@ def _argumentos_de_dominio(datos: TurnoCrear) -> dict[str, object]:
 def crear_turno(
     datos: TurnoCrear,
     contexto: Annotated[ContextoTurnos, Depends(contexto_turnos)],
+    _usuario: Annotated[
+        ContextoUsuario, Depends(requerir_rol("Recepcionista", "Administrador"))
+    ],
 ) -> TurnoRespuesta:
     """Delega el alta en el dominio y serializa el turno creado."""
     turno = contexto.servicio.agendar_turno(**_argumentos_de_dominio(datos))

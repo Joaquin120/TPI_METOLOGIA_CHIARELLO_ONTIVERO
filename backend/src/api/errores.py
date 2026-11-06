@@ -29,6 +29,41 @@ class ErrorTenantNoResuelto(Exception):
         super().__init__(mensaje)
 
 
+class ErrorCredencialesInvalidas(Exception):
+    """Las credenciales de acceso son incorrectas o el usuario está inactivo."""
+
+    def __init__(self, mensaje: str = "Credenciales inválidas") -> None:
+        super().__init__(mensaje)
+
+
+class ErrorNoAutenticado(Exception):
+    """Falta cabecera de autorización o credenciales Bearer."""
+
+    def __init__(self, mensaje: str = "No autenticado") -> None:
+        super().__init__(mensaje)
+
+
+class ErrorTokenExpirado(Exception):
+    """El token JWT ha expirado."""
+
+    def __init__(self, mensaje: str = "Token expirado") -> None:
+        super().__init__(mensaje)
+
+
+class ErrorTokenInvalido(Exception):
+    """El token JWT es inválido o su firma no coincide."""
+
+    def __init__(self, mensaje: str = "Token inválido") -> None:
+        super().__init__(mensaje)
+
+
+class ErrorAccesoDenegado(Exception):
+    """El usuario autenticado no posee el rol necesario para la operación."""
+
+    def __init__(self, mensaje: str = "Acceso denegado") -> None:
+        super().__init__(mensaje)
+
+
 def respuesta_error(status_code: int, code: str, message: str) -> JSONResponse:
     """Construye la respuesta JSON con el envelope de error único."""
     return JSONResponse(
@@ -74,6 +109,36 @@ def _manejar_tenant_no_resuelto(
     return respuesta_error(400, "TENANT_NO_RESUELTO", str(exc))
 
 
+def _manejar_credenciales_invalidas(
+    _request: Request, exc: ErrorCredencialesInvalidas
+) -> JSONResponse:
+    return respuesta_error(401, "CREDENCIALES_INVALIDAS", str(exc))
+
+
+def _manejar_no_autenticado(
+    _request: Request, exc: ErrorNoAutenticado
+) -> JSONResponse:
+    return respuesta_error(401, "NO_AUTENTICADO", str(exc))
+
+
+def _manejar_token_expirado(
+    _request: Request, exc: ErrorTokenExpirado
+) -> JSONResponse:
+    return respuesta_error(401, "TOKEN_EXPIRADO", str(exc))
+
+
+def _manejar_token_invalido(
+    _request: Request, exc: ErrorTokenInvalido
+) -> JSONResponse:
+    return respuesta_error(401, "TOKEN_INVALIDO", str(exc))
+
+
+def _manejar_acceso_denegado(
+    _request: Request, exc: ErrorAccesoDenegado
+) -> JSONResponse:
+    return respuesta_error(403, "ACCESO_DENEGADO", str(exc))
+
+
 def registrar_manejadores_de_errores(app: FastAPI) -> None:
     """Registra en `app` los handlers del envelope (reutilizable por la factoría)."""
     app.add_exception_handler(
@@ -83,3 +148,8 @@ def registrar_manejadores_de_errores(app: FastAPI) -> None:
     app.add_exception_handler(TransicionInvalidaError, _manejar_transicion_invalida)
     app.add_exception_handler(RequestValidationError, _manejar_validacion)
     app.add_exception_handler(ErrorTenantNoResuelto, _manejar_tenant_no_resuelto)
+    app.add_exception_handler(ErrorCredencialesInvalidas, _manejar_credenciales_invalidas)
+    app.add_exception_handler(ErrorNoAutenticado, _manejar_no_autenticado)
+    app.add_exception_handler(ErrorTokenExpirado, _manejar_token_expirado)
+    app.add_exception_handler(ErrorTokenInvalido, _manejar_token_invalido)
+    app.add_exception_handler(ErrorAccesoDenegado, _manejar_acceso_denegado)

@@ -19,6 +19,8 @@ PREFIJOS_PROHIBIDOS: tuple[str, ...] = (
     "pydantic",
     "starlette",
     "httpx",
+    "jwt",
+    "pyjwt",
     "sqlite3",
     "sqlalchemy",
     "alembic",

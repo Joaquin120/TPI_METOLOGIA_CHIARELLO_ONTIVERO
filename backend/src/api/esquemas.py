@@ -60,3 +60,31 @@ class TurnoRespuesta(BaseModel):
             hora_fin=turno.hora_fin,
             estado=turno.estado,
         )
+
+
+class LoginSolicitud(BaseModel):
+    """Cuerpo de `POST /api/v1/auth/login` (C-04, task 3.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: TextoRequerido
+    password: str = Field(min_length=1)
+    tenant_id: int | None = None
+
+
+class TokenRespuesta(BaseModel):
+    """Salida de `POST /api/v1/auth/login` (C-04, task 3.1)."""
+
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
+class UsuarioPerfilRespuesta(BaseModel):
+    """Salida de `GET /api/v1/auth/me` (C-04, task 3.1)."""
+
+    id: int
+    email: str
+    tenant_id: int
+    rol: str
+    profesional_id: int | None = None
