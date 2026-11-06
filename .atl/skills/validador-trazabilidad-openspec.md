@@ -1,6 +1,7 @@
 ---
 name: validador-trazabilidad-openspec
-description: Audita y valida la trazabilidad técnica y metodológica Spec-Driven Development (SDD) para OpenSpec en cambios de backend y API. Verifica fidelidad normativa (escenarios spec.md vs pytest), pureza del dominio (cero acoplamiento en src/domain/), seguridad y aislamiento multi-tenant (tenant_id derivado de ContextoUsuario) y sincronización de artefactos (tasks.md, CHANGES.md y .active-orchestrator-state.json). Triggers: "validar trazabilidad", "auditoría SDD", "control de calidad openspec", "verificar fidelidad de spec", "auditar change", "revisar aislamiento", o antes de archivar un change.
+description: >
+  Audita y valida la trazabilidad técnica y metodológica Spec-Driven Development (SDD) para OpenSpec en cambios de backend y API. Verifica fidelidad normativa (escenarios spec.md vs pytest), pureza del dominio (cero acoplamiento en src/domain/), seguridad y aislamiento multi-tenant (tenant_id derivado de ContextoUsuario) y sincronización de artefactos (tasks.md, CHANGES.md y .active-orchestrator-state.json). Triggers: validar trazabilidad, auditoría SDD, control de calidad openspec, verificar fidelidad de spec, auditar change, revisar aislamiento, o antes de archivar un change.
 ---
 
 # Validador de Trazabilidad OpenSpec (SDD)
