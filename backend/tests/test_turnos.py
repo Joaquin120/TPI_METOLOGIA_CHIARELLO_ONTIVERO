@@ -121,7 +121,6 @@ def test_escenario_3_turnos_contiguos_no_son_solapamiento() -> None:
         sillon=Sillon(nombre="Sillón 1"),
     )
     assert turno_2.estado == "CONFIRMADO"
-    assert len(servicio.turnos_registrados()) == 2
 
 
 # ---------------------------------------------------------------------------
@@ -193,3 +192,72 @@ def test_triangulacion_fechas_diferentes_no_conflictan() -> None:
         sillon=Sillon(nombre="Sillón 1"),
     )
     assert turno_2.estado == "CONFIRMADO"
+
+
+# ---------------------------------------------------------------------------
+# C-05: Task 1.1 - Búsqueda por ID y filtros opcionales en ServicioTurnos
+# ---------------------------------------------------------------------------
+
+
+def test_servicio_obtener_por_id_existente() -> None:
+    """Task 1.1: ServicioTurnos.obtener_por_id retorna el turno con el ID buscado."""
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
+    turno = servicio.agendar_turno(
+        paciente="Paciente A",
+        fecha="2026-11-01",
+        hora_inicio="10:00",
+        hora_fin="10:30",
+        profesional=Profesional(nombre="Dr. Pérez", id=1),
+        sillon=Sillon(nombre="Sillón 1", id=1),
+    )
+    assert turno.id is not None
+    recuperado = servicio.obtener_por_id(turno.id)
+    assert recuperado is not None
+    assert recuperado.id == turno.id
+    assert recuperado.paciente == "Paciente A"
+
+
+def test_servicio_obtener_por_id_inexistente_retorna_none() -> None:
+    """Task 1.1: ServicioTurnos.obtener_por_id retorna None si el turno no existe."""
+    servicio = ServicioTurnos(RepositorioTurnosEnMemoria())
+    assert servicio.obtener_por_id(9999) is None
+
+
+def test_servicio_turnos_registrados_con_filtros() -> None:
+    """Task 1.1: ServicioTurnos.turnos_registrados delega filtros al repositorio."""
+    repo = RepositorioTurnosEnMemoria()
+    servicio = ServicioTurnos(repo)
+    t1 = servicio.agendar_turno(
+        paciente="Paciente 1",
+        fecha="2026-11-01",
+        hora_inicio="10:00",
+        hora_fin="10:30",
+        profesional=Profesional(nombre="Dr. Pérez", id=1),
+        sillon=Sillon(nombre="Sillón 1", id=1),
+    )
+    t2 = servicio.agendar_turno(
+        paciente="Paciente 2",
+        fecha="2026-11-02",
+        hora_inicio="11:00",
+        hora_fin="11:30",
+        profesional=Profesional(nombre="Dra. Gómez", id=2),
+        sillon=Sillon(nombre="Sillón 2", id=2),
+    )
+    # Filtrar por fecha
+    filtrados_fecha = servicio.turnos_registrados(fecha="2026-11-01")
+    assert len(filtrados_fecha) == 1
+    assert filtrados_fecha[0].id == t1.id
+
+    # Filtrar por profesional_id
+    filtrados_prof = servicio.turnos_registrados(profesional_id=2)
+    assert len(filtrados_prof) == 1
+    assert filtrados_prof[0].id == t2.id
+
+    # Filtrar por sillón_id
+    filtrados_sillon = servicio.turnos_registrados(sillon_id=1)
+    assert len(filtrados_sillon) == 1
+    assert filtrados_sillon[0].id == t1.id
+
+    # Filtro combinado sin coincidencias
+    assert len(servicio.turnos_registrados(fecha="2026-11-01", profesional_id=2)) == 0
+

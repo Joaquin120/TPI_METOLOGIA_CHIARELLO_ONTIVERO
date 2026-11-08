@@ -21,8 +21,17 @@ class PuertoTurnos(Protocol):
         """Actualiza el estado de un turno persistido existente."""
         ...
 
-    def listar(self) -> list[Turno]:
-        """Recupera la lista de turnos registrados en el contexto actual."""
+    def obtener_por_id(self, turno_id: int) -> Turno | None:
+        """Recupera un turno por su identificador en el contexto actual."""
+        ...
+
+    def listar(
+        self,
+        fecha: str | None = None,
+        profesional_id: int | None = None,
+        sillon_id: int | None = None,
+    ) -> list[Turno]:
+        """Recupera la lista de turnos registrados aplicando filtros opcionales."""
         ...
 
     def agregar(self, turno: Turno) -> None:

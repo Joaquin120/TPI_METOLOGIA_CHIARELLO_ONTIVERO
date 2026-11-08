@@ -113,15 +113,15 @@
     "status": "missing"
   },
   "active_change": {
-    "name": "c-04-auth-rbac-tenancy",
-    "roadmap_id": "C-04",
-    "roadmap_slug": "auth-rbac-tenancy",
-    "path": "openspec/changes/archive/2026-11-05-c-04-auth-rbac-tenancy",
+    "name": "c-05-endpoints-turnos",
+    "roadmap_id": "C-05",
+    "roadmap_slug": "endpoints-turnos",
+    "path": "openspec/changes/archive/2026-11-08-c-05-endpoints-turnos",
     "schema": "spec-driven",
     "phase": "archive",
     "status": "archived",
-    "tests": "130 passed, cov 97%",
-    "next_action": "/opsx:propose c-05-endpoints-turnos",
-    "recorded_at": "2026-11-05"
+    "tests": "155 passed, cov 97%",
+    "next_action": "/opsx:propose c-06-endpoints-recursos",
+    "recorded_at": "2026-11-08"
   }
 }

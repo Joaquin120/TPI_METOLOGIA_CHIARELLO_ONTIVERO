@@ -94,9 +94,35 @@ class RepositorioTurnosSqlite:
                 self._conexion.commit()
                 return turno
 
-    def listar(self) -> list[Turno]:
-        """Recupera todos los turnos registrados para el tenant ordenados cronológicamente."""
-        filas = self._conexion.execute(
+    def _fila_a_turno(self, fila: sqlite3.Row | tuple) -> Turno:
+        """Convierte una fila de la consulta SQL a la entidad Turno."""
+        f_inicio = fila["fecha_hora_inicio"] if isinstance(fila, sqlite3.Row) else fila[1]
+        f_fin = fila["fecha_hora_fin"] if isinstance(fila, sqlite3.Row) else fila[2]
+        estado = fila["estado"] if isinstance(fila, sqlite3.Row) else fila[3]
+        prof_id = fila["profesional_id"] if isinstance(fila, sqlite3.Row) else fila[4]
+        prof_nom = fila["profesional_nombre"] if isinstance(fila, sqlite3.Row) else fila[5]
+        sil_id = fila["sillon_id"] if isinstance(fila, sqlite3.Row) else fila[6]
+        sil_nom = fila["sillon_nombre"] if isinstance(fila, sqlite3.Row) else fila[7]
+        pac_nom = fila["paciente_nombre"] if isinstance(fila, sqlite3.Row) else fila[8]
+        t_id = fila["id"] if isinstance(fila, sqlite3.Row) else fila[0]
+
+        fecha, hora_inicio = f_inicio.split(" ")
+        _, hora_fin = f_fin.split(" ")
+
+        return Turno(
+            id=t_id,
+            profesional=Profesional(nombre=prof_nom, id=prof_id),
+            sillon=Sillon(nombre=sil_nom, id=sil_id),
+            fecha=fecha,
+            hora_inicio=hora_inicio,
+            hora_fin=hora_fin,
+            paciente=pac_nom,
+            estado=estado,
+        )
+
+    def obtener_por_id(self, turno_id: int) -> Turno | None:
+        """Recupera un turno por su ID dentro del tenant o None si no existe."""
+        fila = self._conexion.execute(
             """
             SELECT t.id, t.fecha_hora_inicio, t.fecha_hora_fin, t.estado,
                    p.id AS profesional_id, p.nombre AS profesional_nombre,
@@ -107,39 +133,51 @@ class RepositorioTurnosSqlite:
               JOIN sillon s ON t.sillon_id = s.id
               JOIN paciente pac ON t.paciente_id = pac.id
              WHERE t.tenant_id = ?
-             ORDER BY t.fecha_hora_inicio, t.id
+               AND t.id = ?
             """,
-            (self._tenant_id,),
-        ).fetchall()
+            (self._tenant_id, turno_id),
+        ).fetchone()
+        if fila is None:
+            return None
+        return self._fila_a_turno(fila)
 
-        turnos: list[Turno] = []
-        for fila in filas:
-            f_inicio = fila["fecha_hora_inicio"] if isinstance(fila, sqlite3.Row) else fila[1]
-            f_fin = fila["fecha_hora_fin"] if isinstance(fila, sqlite3.Row) else fila[2]
-            estado = fila["estado"] if isinstance(fila, sqlite3.Row) else fila[3]
-            prof_id = fila["profesional_id"] if isinstance(fila, sqlite3.Row) else fila[4]
-            prof_nom = fila["profesional_nombre"] if isinstance(fila, sqlite3.Row) else fila[5]
-            sil_id = fila["sillon_id"] if isinstance(fila, sqlite3.Row) else fila[6]
-            sil_nom = fila["sillon_nombre"] if isinstance(fila, sqlite3.Row) else fila[7]
-            pac_nom = fila["paciente_nombre"] if isinstance(fila, sqlite3.Row) else fila[8]
-            t_id = fila["id"] if isinstance(fila, sqlite3.Row) else fila[0]
+    def listar(
+        self,
+        fecha: str | None = None,
+        profesional_id: int | None = None,
+        sillon_id: int | None = None,
+    ) -> list[Turno]:
+        """Recupera los turnos del tenant con filtros opcionales ordenados cronológicamente."""
+        clausulas = ["t.tenant_id = ?"]
+        parametros: list[object] = [self._tenant_id]
 
-            fecha, hora_inicio = f_inicio.split(" ")
-            _, hora_fin = f_fin.split(" ")
+        if fecha is not None:
+            clausulas.append("t.fecha_hora_inicio LIKE ?")
+            parametros.append(f"{fecha}%")
 
-            turnos.append(
-                Turno(
-                    id=t_id,
-                    profesional=Profesional(nombre=prof_nom, id=prof_id),
-                    sillon=Sillon(nombre=sil_nom, id=sil_id),
-                    fecha=fecha,
-                    hora_inicio=hora_inicio,
-                    hora_fin=hora_fin,
-                    paciente=pac_nom,
-                    estado=estado,
-                )
-            )
-        return turnos
+        if profesional_id is not None:
+            clausulas.append("t.profesional_id = ?")
+            parametros.append(profesional_id)
+
+        if sillon_id is not None:
+            clausulas.append("t.sillon_id = ?")
+            parametros.append(sillon_id)
+
+        where_sql = " AND ".join(clausulas)
+        sql = f"""
+            SELECT t.id, t.fecha_hora_inicio, t.fecha_hora_fin, t.estado,
+                   p.id AS profesional_id, p.nombre AS profesional_nombre,
+                   s.id AS sillon_id, s.nombre AS sillon_nombre,
+                   pac.nombre AS paciente_nombre
+              FROM turno t
+              JOIN profesional p ON t.profesional_id = p.id
+              JOIN sillon s ON t.sillon_id = s.id
+              JOIN paciente pac ON t.paciente_id = pac.id
+             WHERE {where_sql}
+             ORDER BY t.fecha_hora_inicio, t.id
+        """
+        filas = self._conexion.execute(sql, tuple(parametros)).fetchall()
+        return [self._fila_a_turno(fila) for fila in filas]
 
     def agregar(self, turno: Turno) -> None:
         """Siembra un turno directamente delegando en guardar."""

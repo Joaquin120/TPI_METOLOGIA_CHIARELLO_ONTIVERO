@@ -191,3 +191,99 @@ def test_aislamiento_entre_tenants_en_turnos(cliente: TestClient) -> None:
     assert len(listado_hack) == 1
     assert listado_hack[0]["paciente"] == "Paciente Ficticio T1"
 
+
+# ---------------------------------------------------------------------------
+# C-05: Task 3.2 - Restricción de agenda para rol Profesional
+# ---------------------------------------------------------------------------
+
+
+def test_profesional_solo_ve_sus_propios_turnos_en_get_turnos(cliente: TestClient) -> None:
+    """Task 3.2: el profesional solo visualiza los turnos donde profesional_id coincide con su identidad."""
+    token_recepcion = crear_token_acceso({
+        "sub": "1",
+        "email": "recepcion@ejemplo.com",
+        "tenant_id": 1,
+        "rol": "Recepcionista",
+        "profesional_id": None,
+    })
+
+    # Crear turno para Dr. Ejemplo (prof 1)
+    cliente.post(
+        "/api/v1/turnos",
+        json={
+            "paciente": "Paciente de Prof 1",
+            "profesional": "Dr. Ejemplo",
+            "sillon": "Sillón 1",
+            "fecha": "2026-11-15",
+            "hora_inicio": "10:00",
+            "hora_fin": "10:30",
+        },
+        headers={"Authorization": f"Bearer {token_recepcion}"},
+    )
+
+    # Crear turno para Dra. Ejemplo (prof 2)
+    cliente.post(
+        "/api/v1/turnos",
+        json={
+            "paciente": "Paciente de Prof 2",
+            "profesional": "Dra. Ejemplo",
+            "sillon": "Sillón 2",
+            "fecha": "2026-11-15",
+            "hora_inicio": "11:00",
+            "hora_fin": "11:30",
+        },
+        headers={"Authorization": f"Bearer {token_recepcion}"},
+    )
+
+    token_prof1 = crear_token_acceso({
+        "sub": "3",
+        "email": "prof1@ejemplo.com",
+        "tenant_id": 1,
+        "rol": "Profesional",
+        "profesional_id": 1,
+    })
+
+    resp = cliente.get("/api/v1/turnos", headers={"Authorization": f"Bearer {token_prof1}"})
+    assert resp.status_code == 200
+    turnos = resp.json()
+    assert len(turnos) == 1
+    assert turnos[0]["profesional"] == "Dr. Ejemplo"
+    assert turnos[0]["paciente"] == "Paciente de Prof 1"
+
+
+def test_profesional_consultando_otro_profesional_devuelve_403(cliente: TestClient) -> None:
+    """Task 3.2: intentar consultar la agenda de otro profesional responde 403 ACCESO_DENEGADO."""
+    token_prof1 = crear_token_acceso({
+        "sub": "3",
+        "email": "prof1@ejemplo.com",
+        "tenant_id": 1,
+        "rol": "Profesional",
+        "profesional_id": 1,
+    })
+
+    resp = cliente.get(
+        "/api/v1/turnos?profesional_id=2",
+        headers={"Authorization": f"Bearer {token_prof1}"},
+    )
+    assert resp.status_code == 403
+    assert resp.json()["error"]["code"] == "ACCESO_DENEGADO"
+
+
+def test_profesional_sin_recurso_asociado_devuelve_403(cliente: TestClient) -> None:
+    """Task 3.2: un usuario con rol Profesional pero sin profesional_id devuelve 403 ACCESO_DENEGADO."""
+    token_prof_huerfano = crear_token_acceso({
+        "sub": "4",
+        "email": "huerfano@ejemplo.com",
+        "tenant_id": 1,
+        "rol": "Profesional",
+        "profesional_id": None,
+    })
+
+    resp = cliente.get(
+        "/api/v1/turnos",
+        headers={"Authorization": f"Bearer {token_prof_huerfano}"},
+    )
+    assert resp.status_code == 403
+    assert resp.json()["error"]["code"] == "ACCESO_DENEGADO"
+
+

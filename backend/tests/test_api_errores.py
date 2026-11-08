@@ -53,6 +53,12 @@ def _app_de_prueba() -> FastAPI:
     def _tenant_inexistente() -> dict[str, str]:
         raise ErrorTenantNoResuelto("El tenant 999 no existe")
 
+    @app.get("/prueba/turno-no-encontrado")
+    def _turno_no_encontrado() -> dict[str, str]:
+        from src.api.errores import ErrorTurnoNoEncontrado
+
+        raise ErrorTurnoNoEncontrado("Turno no encontrado")
+
     return app
 
 
@@ -191,3 +197,17 @@ def test_tenant_inexistente_devuelve_400(cliente: TestClient) -> None:
     assert respuesta.status_code == 400
     assert respuesta.json()["error"]["code"] == "TENANT_NO_RESUELTO"
     assert respuesta.json()["error"]["message"] == "El tenant 999 no existe"
+
+
+def test_turno_no_encontrado_devuelve_404(cliente: TestClient) -> None:
+    """Task 2.1: ErrorTurnoNoEncontrado se mapea a 404 con envelope estándar."""
+    respuesta = cliente.get("/prueba/turno-no-encontrado")
+
+    assert respuesta.status_code == 404
+    assert respuesta.json() == {
+        "error": {
+            "code": "TURNO_NO_ENCONTRADO",
+            "message": "Turno no encontrado",
+        }
+    }
+

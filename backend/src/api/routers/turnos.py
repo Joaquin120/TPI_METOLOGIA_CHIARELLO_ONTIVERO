@@ -7,15 +7,22 @@ importa `buscar_activos_solapables`, `ESTADOS_ACTIVOS` ni reglas de transición.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencias import (
     ContextoTurnos,
     ContextoUsuario,
     contexto_turnos,
+    obtener_usuario_actual,
     requerir_rol,
 )
-from src.api.esquemas import TurnoCrear, TurnoRespuesta
+from src.api.errores import ErrorAccesoDenegado, ErrorTurnoNoEncontrado
+from src.api.esquemas import (
+    PATRON_FECHA,
+    TurnoCambioEstado,
+    TurnoCrear,
+    TurnoRespuesta,
+)
 from src.domain.models import Profesional, Sillon
 
 router = APIRouter(tags=["turnos"])
@@ -51,9 +58,55 @@ def crear_turno(
 @router.get("/turnos", response_model=list[TurnoRespuesta])
 def listar_turnos(
     contexto: Annotated[ContextoTurnos, Depends(contexto_turnos)],
+    usuario: Annotated[ContextoUsuario, Depends(obtener_usuario_actual)],
+    fecha: Annotated[
+        str | None, Query(pattern=PATRON_FECHA, description="Fecha YYYY-MM-DD")
+    ] = None,
+    profesional_id: Annotated[
+        int | None, Query(description="ID del profesional")
+    ] = None,
+    sillon_id: Annotated[int | None, Query(description="ID del sillón")] = None,
 ) -> list[TurnoRespuesta]:
-    """Devuelve solo los turnos del tenant resuelto (sin filtros ni paginación)."""
+    """Devuelve turnos del tenant resuelto aplicando filtros opcionales."""
+    if usuario.rol == "Profesional":
+        if usuario.profesional_id is None:
+            raise ErrorAccesoDenegado("Usuario profesional sin recurso asociado")
+        if profesional_id is not None and profesional_id != usuario.profesional_id:
+            raise ErrorAccesoDenegado(
+                "El profesional solo puede consultar su propia agenda"
+            )
+        profesional_id = usuario.profesional_id
+
     return [
         TurnoRespuesta.desde_dominio(turno)
-        for turno in contexto.servicio.turnos_registrados()
+        for turno in contexto.servicio.turnos_registrados(
+            fecha=fecha,
+            profesional_id=profesional_id,
+            sillon_id=sillon_id,
+        )
     ]
+
+
+@router.patch("/turnos/{id}/estado", response_model=TurnoRespuesta)
+def cambiar_estado_turno(
+    id: int,
+    datos: TurnoCambioEstado,
+    contexto: Annotated[ContextoTurnos, Depends(contexto_turnos)],
+    _usuario: Annotated[
+        ContextoUsuario, Depends(requerir_rol("Recepcionista", "Administrador"))
+    ],
+) -> TurnoRespuesta:
+    """Cambia el estado de un turno delegando la transición al dominio."""
+    turno = contexto.servicio.obtener_por_id(id)
+    if turno is None:
+        raise ErrorTurnoNoEncontrado(f"El turno {id} no existe en este tenant")
+
+    if datos.accion == "confirmar":
+        actualizado = contexto.servicio.confirmar(turno)
+    elif datos.accion == "cancelar":
+        actualizado = contexto.servicio.cancelar(turno)
+    else:
+        actualizado = contexto.servicio.completar(turno)
+
+    return TurnoRespuesta.desde_dominio(actualizado)
+

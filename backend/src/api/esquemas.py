@@ -6,7 +6,7 @@ Contrato por **nombres** de recurso, igual que el dominio y
 la capa de presentación). No se valida `hora_inicio < hora_fin` (RP-01 abierta).
 """
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
@@ -60,6 +60,14 @@ class TurnoRespuesta(BaseModel):
             hora_fin=turno.hora_fin,
             estado=turno.estado,
         )
+
+
+class TurnoCambioEstado(BaseModel):
+    """Cuerpo de `PATCH /api/v1/turnos/{id}/estado` (C-05)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    accion: Literal["confirmar", "cancelar", "completar"]
 
 
 class LoginSolicitud(BaseModel):

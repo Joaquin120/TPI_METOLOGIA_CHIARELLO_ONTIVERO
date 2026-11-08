@@ -168,3 +168,34 @@ def test_turno_respuesta_triangula_turno_cancelado() -> None:
         "estado",
     }
 
+
+# ---------------------------------------------------------------------------
+# C-05: Task 2.1 - RED/GREEN de `TurnoCambioEstado`
+# ---------------------------------------------------------------------------
+
+
+def test_turno_cambio_estado_acepta_acciones_validas() -> None:
+    """TurnoCambioEstado acepta 'confirmar', 'cancelar' y 'completar'."""
+    from src.api.esquemas import TurnoCambioEstado
+
+    for accion in ("confirmar", "cancelar", "completar"):
+        esquema = TurnoCambioEstado(accion=accion)
+        assert esquema.accion == accion
+
+
+def test_turno_cambio_estado_rechaza_accion_invalida() -> None:
+    """TurnoCambioEstado rechaza acciones no normativas."""
+    from src.api.esquemas import TurnoCambioEstado
+
+    with pytest.raises(ValidationError):
+        TurnoCambioEstado(accion="reprogramar_invalido")
+
+
+def test_turno_cambio_estado_rechaza_campos_extra() -> None:
+    """TurnoCambioEstado prohíbe campos extra (extra='forbid')."""
+    from src.api.esquemas import TurnoCambioEstado
+
+    with pytest.raises(ValidationError):
+        TurnoCambioEstado(accion="cancelar", tenant_id=1)
+
+

@@ -522,3 +522,122 @@ def test_obtener_recursos_inexistentes_devuelve_none(tmp_path) -> None:
     assert repo_sil.obtener_por_id(999) is None
     assert repo_pac.obtener_nombre_por_id(999) is None
     conexion.close()
+
+
+# ---------------------------------------------------------------------------
+# C-05: Task 1.2 - RepositorioTurnosSqlite: obtener_por_id y listar con filtros
+# ---------------------------------------------------------------------------
+
+
+def test_repositorio_obtener_por_id_existente_e_inexistente(tmp_path) -> None:
+    """Task 1.2: obtener_por_id devuelve el turno del tenant o None si no existe o es de otro tenant."""
+    ruta = tmp_path / "repo_obtener_id.db"
+    conexion = abrir_conexion(str(ruta))
+    migrar(conexion)
+    sembrar_datos_iniciales(conexion)
+    tenant1 = _obtener_tenant_id(conexion)
+
+    # Crear tenant 2
+    cur = conexion.execute("INSERT INTO tenant (nombre) VALUES ('Clínica Dos')")
+    tenant2 = cur.lastrowid
+    conexion.commit()
+
+    repo1 = RepositorioTurnosSqlite(conexion, tenant_id=tenant1)
+    repo2 = RepositorioTurnosSqlite(conexion, tenant_id=tenant2)
+
+    t1 = repo1.guardar(
+        Turno(
+            profesional=Profesional(nombre="Dr. Ejemplo"),
+            sillon=Sillon(nombre="Sillón 1"),
+            fecha="2026-11-01",
+            hora_inicio="10:00",
+            hora_fin="10:30",
+            paciente="Paciente Uno",
+        )
+    )
+
+    # Recuperar existente
+    recuperado = repo1.obtener_por_id(t1.id)
+    assert recuperado is not None
+    assert recuperado.id == t1.id
+    assert recuperado.paciente == "Paciente Uno"
+    assert recuperado.profesional.nombre == "Dr. Ejemplo"
+
+    # Inexistente
+    assert repo1.obtener_por_id(9999) is None
+
+    # Aislamiento por tenant: repo2 no puede obtener el turno de tenant1
+    assert repo2.obtener_por_id(t1.id) is None
+
+    conexion.close()
+
+
+def test_repositorio_listar_con_filtros_combinables(tmp_path) -> None:
+    """Task 1.2: listar filtra por fecha, profesional_id y sillon_id con conjunción lógica."""
+    ruta = tmp_path / "repo_filtros.db"
+    conexion = abrir_conexion(str(ruta))
+    migrar(conexion)
+    sembrar_datos_iniciales(conexion)
+    tenant = _obtener_tenant_id(conexion)
+
+    repo = RepositorioTurnosSqlite(conexion, tenant_id=tenant)
+    prof1_id = RepositorioProfesionales(conexion, tenant).resolver_id("Dr. Ejemplo")
+    prof2_id = RepositorioProfesionales(conexion, tenant).resolver_id("Dra. Ejemplo")
+    sil1_id = RepositorioSillones(conexion, tenant).resolver_id("Sillón 1")
+    sil2_id = RepositorioSillones(conexion, tenant).resolver_id("Sillón 2")
+
+    t1 = repo.guardar(
+        Turno(
+            profesional=Profesional(nombre="Dr. Ejemplo"),
+            sillon=Sillon(nombre="Sillón 1"),
+            fecha="2026-11-01",
+            hora_inicio="09:00",
+            hora_fin="09:30",
+            paciente="Paciente A",
+        )
+    )
+    t2 = repo.guardar(
+        Turno(
+            profesional=Profesional(nombre="Dra. Ejemplo"),
+            sillon=Sillon(nombre="Sillón 2"),
+            fecha="2026-11-01",
+            hora_inicio="10:00",
+            hora_fin="10:30",
+            paciente="Paciente B",
+        )
+    )
+    t3 = repo.guardar(
+        Turno(
+            profesional=Profesional(nombre="Dr. Ejemplo"),
+            sillon=Sillon(nombre="Sillón 2"),
+            fecha="2026-11-02",
+            hora_inicio="11:00",
+            hora_fin="11:30",
+            paciente="Paciente C",
+        )
+    )
+
+    # Sin filtros
+    assert len(repo.listar()) == 3
+
+    # Filtro fecha
+    res_fecha = repo.listar(fecha="2026-11-01")
+    assert [t.id for t in res_fecha] == [t1.id, t2.id]
+
+    # Filtro profesional
+    res_prof = repo.listar(profesional_id=prof1_id)
+    assert [t.id for t in res_prof] == [t1.id, t3.id]
+
+    # Filtro sillón
+    res_sil = repo.listar(sillon_id=sil2_id)
+    assert [t.id for t in res_sil] == [t2.id, t3.id]
+
+    # Filtro combinado (fecha + profesional)
+    res_comb = repo.listar(fecha="2026-11-01", profesional_id=prof1_id)
+    assert [t.id for t in res_comb] == [t1.id]
+
+    # Filtro combinado sin resultados
+    assert repo.listar(fecha="2026-11-02", sillon_id=sil1_id) == []
+
+    conexion.close()
+

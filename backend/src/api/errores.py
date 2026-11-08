@@ -64,6 +64,13 @@ class ErrorAccesoDenegado(Exception):
         super().__init__(mensaje)
 
 
+class ErrorTurnoNoEncontrado(Exception):
+    """El turno solicitado no existe en el tenant resuelto."""
+
+    def __init__(self, mensaje: str = "Turno no encontrado") -> None:
+        super().__init__(mensaje)
+
+
 def respuesta_error(status_code: int, code: str, message: str) -> JSONResponse:
     """Construye la respuesta JSON con el envelope de error único."""
     return JSONResponse(
@@ -139,6 +146,12 @@ def _manejar_acceso_denegado(
     return respuesta_error(403, "ACCESO_DENEGADO", str(exc))
 
 
+def _manejar_turno_no_encontrado(
+    _request: Request, exc: ErrorTurnoNoEncontrado
+) -> JSONResponse:
+    return respuesta_error(404, "TURNO_NO_ENCONTRADO", str(exc))
+
+
 def registrar_manejadores_de_errores(app: FastAPI) -> None:
     """Registra en `app` los handlers del envelope (reutilizable por la factoría)."""
     app.add_exception_handler(
@@ -153,3 +166,4 @@ def registrar_manejadores_de_errores(app: FastAPI) -> None:
     app.add_exception_handler(ErrorTokenExpirado, _manejar_token_expirado)
     app.add_exception_handler(ErrorTokenInvalido, _manejar_token_invalido)
     app.add_exception_handler(ErrorAccesoDenegado, _manejar_acceso_denegado)
+    app.add_exception_handler(ErrorTurnoNoEncontrado, _manejar_turno_no_encontrado)

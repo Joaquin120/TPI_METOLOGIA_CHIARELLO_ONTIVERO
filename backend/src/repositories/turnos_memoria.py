@@ -53,9 +53,33 @@ class RepositorioTurnosEnMemoria:
         self._turnos.append(turno)
         return turno
 
-    def listar(self) -> list[Turno]:
-        """Devuelve una copia de la lista de turnos registrados."""
-        return list(self._turnos)
+    def obtener_por_id(self, turno_id: int) -> Turno | None:
+        """Recupera un turno por su ID en memoria."""
+        for turno in self._turnos:
+            if turno.id == turno_id:
+                return turno
+        return None
+
+    def listar(
+        self,
+        fecha: str | None = None,
+        profesional_id: int | None = None,
+        sillon_id: int | None = None,
+    ) -> list[Turno]:
+        """Devuelve una copia de la lista de turnos registrados aplicando filtros."""
+        resultado: list[Turno] = []
+        for turno in self._turnos:
+            if fecha is not None and turno.fecha != fecha:
+                continue
+            if (
+                profesional_id is not None
+                and turno.profesional.id != profesional_id
+            ):
+                continue
+            if sillon_id is not None and turno.sillon.id != sillon_id:
+                continue
+            resultado.append(turno)
+        return resultado
 
     def agregar(self, turno: Turno) -> None:
         """Agrega un turno directamente (soporte para sembrado en tests)."""

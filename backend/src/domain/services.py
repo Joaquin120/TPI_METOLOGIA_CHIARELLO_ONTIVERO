@@ -82,9 +82,24 @@ class ServicioTurnos:
         )
         return self._repositorio.guardar(turno)
 
-    def turnos_registrados(self) -> list[Turno]:
-        """Devuelve una copia de la lista de turnos registrados."""
-        return self._repositorio.listar()
+    def turnos_registrados(
+        self,
+        fecha: str | None = None,
+        profesional_id: int | None = None,
+        sillon_id: int | None = None,
+    ) -> list[Turno]:
+        """Devuelve una copia de la lista de turnos registrados con filtros opcionales."""
+        if fecha is None and profesional_id is None and sillon_id is None:
+            return self._repositorio.listar()
+        return self._repositorio.listar(
+            fecha=fecha,
+            profesional_id=profesional_id,
+            sillon_id=sillon_id,
+        )
+
+    def obtener_por_id(self, turno_id: int) -> Turno | None:
+        """Recupera un turno por su identificador único."""
+        return self._repositorio.obtener_por_id(turno_id)
 
     def _transicionar(self, turno: Turno, accion: str) -> Turno:
         """Aplica una acción de la lista blanca `_TRANSICIONES` y reemplaza el turno registrado.

@@ -203,12 +203,24 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 > `C-05`, `C-06` y `C-07` pueden proponerse y ejecutarse en paralelo tras `C-04`.
 
 ### [C-05] `endpoints-turnos`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado y archivado (`openspec/changes/archive/2026-11-08-c-05-endpoints-turnos/`)
 - **Scope**: API REST completa del módulo Agenda (`F-01`, `F-02`, `F-03`)
   - `POST /api/v1/turnos` — alta con doble validación delegada al dominio (`RN-01`, `RN-09`), estado inicial `CONFIRMADO`
-  - `GET /api/v1/turnos` — filtros `profesional_id`, `sillon_id`, `fecha`; solo turnos del tenant (`RN-05`); el `Profesional` solo ve los propios
+  - `GET /api/v1/turnos` — filtros opcionales combinables `fecha`, `profesional_id`, `sillon_id`; solo turnos del tenant (`RN-05`); el rol `Profesional` restringido a su propia agenda
   - `PATCH /api/v1/turnos/{id}/estado` — confirmar / cancelar / completar según `RN-03`; cancelación libera recursos (`RN-04`)
-  - Tests: camino feliz, conflicto de profesional, conflicto de sillón, contiguos, filtros, transiciones inválidas rechazadas, aislamiento por tenant
+  - Tests: suite de 155 tests passing en SQLite real con 97% de cobertura global y 100% en dominio y persistencia
+- **Auditoría de Trazabilidad OpenSpec (SDD)**:
+  - Validado formalmente con la skill `.atl/skills/validador-trazabilidad-openspec.md`:
+    1. *Fidelidad normativa*: 15 escenarios de spec verificados con pytest (200, 201, 401, 403, 404, 409, 422) con envelope estándar.
+    2. *Pureza de dominio*: 0 dependencias externas en `src/domain/` (guard tests 5/5 passing).
+    3. *Seguridad y aislamiento*: `tenant_id` derivado forzosamente desde JWT (`ContextoUsuario`), aislamiento inter-tenant demostrado en SQLite real.
+    4. *Sincronización de artefactos*: `tasks.md` (9/9 all_done), roadmap `CHANGES.md` y `.active-orchestrator-state.json`.
+  - *Dictamen*: **APROBADO**.
+- **Herramientas MCP utilizadas en este change**:
+  - Servidor **`engram`**:
+    - `mem_context`: Recuperación del contexto de sesiones previas al iniciar propose y apply.
+    - `mem_save`: Persistencia proactiva de arquitectura al completar propose, apply y archive.
+    - `mem_judge`: Arbitraje de relaciones y precedencia de observaciones de arquitectura de C-05.
 - **Dependencias**: `C-04`
 - **Governance**: MEDIO
 - **Leer antes**:
