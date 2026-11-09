@@ -26,6 +26,7 @@ from src.api.seguridad import (
 )
 from src.domain.services import ServicioTurnos
 from src.infrastructure.database import abrir_conexion
+from src.repositories.pacientes_sqlite import RepositorioPacientesSqlite
 from src.repositories.recursos import (
     RepositorioProfesionales,
     RepositorioSillones,
@@ -181,4 +182,16 @@ def contexto_recursos(
         )
     finally:
         conexion.close()
+
+
+def get_repositorio_pacientes(
+    request: Request,
+) -> Iterator[RepositorioPacientesSqlite]:
+    """Dependencia de FastAPI: conexión por petición y repositorio de pacientes (C-07)."""
+    conexion = abrir_conexion(request.app.state.ruta_db)
+    try:
+        yield RepositorioPacientesSqlite(conexion)
+    finally:
+        conexion.close()
+
 

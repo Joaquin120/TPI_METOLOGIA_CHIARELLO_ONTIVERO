@@ -16,6 +16,17 @@ ESTADOS_ACTIVOS = frozenset({PENDIENTE, CONFIRMADO})
 
 
 @dataclass(frozen=True)
+class Paciente:
+    """Entidad de dominio que representa a una persona atendida en una clínica."""
+
+    dni: str
+    nombre: str
+    telefono: str
+    tenant_id: int
+    id: int | None = None
+
+
+@dataclass(frozen=True)
 class Profesional:
     """Profesional de la salud que atiende turnos."""
 

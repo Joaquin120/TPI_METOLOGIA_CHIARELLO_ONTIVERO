@@ -86,7 +86,8 @@
     "recommended": [],
     "installed": [
       "domain-state-matrix-validator",
-      "validador-trazabilidad-openspec"
+      "validador-trazabilidad-openspec",
+      "generador-datos-pacientes-sinteticos"
     ]
   },
   "agents": {
@@ -113,15 +114,15 @@
     "status": "missing"
   },
   "active_change": {
-    "name": "c-06-endpoints-recursos",
-    "roadmap_id": "C-06",
-    "roadmap_slug": "endpoints-recursos",
-    "path": "openspec/changes/archive/2026-11-09-c-06-endpoints-recursos",
+    "name": "c-07-gestion-pacientes",
+    "roadmap_id": "C-07",
+    "roadmap_slug": "gestion-pacientes",
+    "path": "openspec/changes/archive/2026-11-09-c-07-gestion-pacientes",
     "schema": "spec-driven",
     "phase": "archive",
     "status": "archived",
-    "tests": "170 passed, cov 97%",
-    "next_action": "/opsx:propose c-07-gestion-pacientes",
+    "tests": "189 passed, cov 100% on pacientes",
+    "next_action": "/opsx:propose c-08-reprogramacion-turno",
     "recorded_at": "2026-11-09"
   }
 }

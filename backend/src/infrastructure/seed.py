@@ -27,9 +27,15 @@ USUARIOS_DEFECTO = (
     ("dr.ejemplo@ejemplo.com", "Profesional", "Dr. Ejemplo"),
 )
 
+# Pacientes sintéticos iniciales (C-07, RN-06)
+PACIENTES_DEFECTO = (
+    ("Paciente Ficticio Uno", "10000001", "+54 11 4000-0001"),
+    ("Paciente Ficticio Dos", "10000002", "+54 11 4000-0002"),
+)
+
 
 def sembrar_datos_iniciales(conexion: sqlite3.Connection) -> None:
-    """Siembra 1 tenant, 3 profesionales, 3 sillones y 3 usuarios de forma idempotente.
+    """Siembra 1 tenant, profesionales, sillones, usuarios y pacientes de forma idempotente.
 
     Regla dura 3 / RN-06: utiliza únicamente datos sintéticos.
     """
@@ -85,6 +91,18 @@ def sembrar_datos_iniciales(conexion: sqlite3.Connection) -> None:
             VALUES (?, ?, ?, ?, ?, 1)
             """,
             (tenant_id, email, hash_password, rol, prof_id),
+        )
+
+    for nombre, dni, telefono in PACIENTES_DEFECTO:
+        conexion.execute(
+            """
+            INSERT INTO paciente (tenant_id, nombre, dni, telefono)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(tenant_id, nombre) DO UPDATE SET
+                dni = excluded.dni,
+                telefono = excluded.telefono
+            """,
+            (tenant_id, nombre, dni, telefono),
         )
 
     conexion.commit()

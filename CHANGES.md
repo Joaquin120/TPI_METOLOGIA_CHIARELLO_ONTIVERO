@@ -261,7 +261,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ---
 
 ### [C-07] `gestion-pacientes`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado (2026-11-09)
 - **Scope**: Alta y consulta de pacientes (`F-11`)
   - Definir contrato (figura como "pendiente de definición" en `features.md` §5): `POST /api/v1/pacientes`, `GET /api/v1/pacientes` con filtro `dni` o `nombre`
   - Campos: `dni`, `nombre`, `telefono`, `tenant_id` (`data-models.md` §2.4); validación de datos mínimos
@@ -428,12 +428,20 @@ Orden de ejecución planificado (pendiente):
 2. ~~`C-02` **persistencia-sqlite**~~ ✔ completado (2026-11-03)
 3. ~~`C-03` **capa-api-desacoplada**~~ ✔ completado (2026-11-05)
 4. ~~`C-04` auth-rbac-tenancy~~ ✔ completado (2026-11-05)
-5. ~~`C-05` endpoints-turnos~~ ✔ completado · ~~`C-06` endpoints-recursos~~ ✔ completado · `C-07` gestion-pacientes (paralelo)
+5. ~~`C-05` endpoints-turnos~~ ✔ completado · ~~`C-06` endpoints-recursos~~ ✔ completado · ~~`C-07` gestion-pacientes~~ ✔ completado (2026-11-09)
 6. `C-08` reprogramacion-turno · `C-09` admin-recursos-crud · `C-11` frontend-shell
 7. `C-10` bloqueo-sillon · `C-12` agenda-turnos-ui — **cierre del MVP**
 
 > Cadena prioritaria: **cancelación y estados de turnos → persistencia en BD → desacouple de backend** (`C-01 → C-02 → C-03`).
 > Segunda etapa (post-MVP): `C-13` agenda-matricial, `C-14` notificaciones-whatsapp, `C-15` lista-espera.
+
+### [0.7.0] — 2026-11-09 — Gestión de pacientes ✔ COMPLETADO
+
+- **Patient Management & Isolation (F-11, RN-05, RN-06):** Migración `004_pacientes.sql` con columna `telefono` e índice compuesto `idx_paciente_tenant_dni` (`UNIQUE(tenant_id, dni)`).
+- **Core Domain & Persistence:** Entidad pura `Paciente` en `src/domain/models.py` y adaptador `RepositorioPacientesSqlite` en `src/repositories/pacientes_sqlite.py` con aislamiento estricto por `tenant_id`.
+- **API & Error Envelope:** Endpoints `POST /api/v1/pacientes` (201) y `GET /api/v1/pacientes` (200) con RBAC (Recepcionista/Admin para alta; Profesional para consulta), validación regex `^\d{8}$` en `dni`, y envelope unificado ante conflictos `PACIENTE_DUPLICADO` (409) y validaciones (422).
+- **`2026-11-09-c-07-gestion-pacientes`** — ✔️ Archivado. Spec creada en `openspec/specs/gestionar-pacientes/spec.md` (4 requirements ADDED) y cambio archivado. Suite verde: 189 tests pasados, 100% de cobertura en módulos de pacientes.
+- **Skill propia integrada:** `.atl/skills/generador-datos-pacientes-sinteticos.md` — validación formal de privacidad y fixtures sintéticos.
 
 ### [0.2.0] — 2026-10-15 — Crear turno sin solapamientos ✔ COMPLETADO
 
@@ -467,7 +475,7 @@ Orden de ejecución planificado (pendiente):
 | C-04 | auth-rbac-tenancy | 1 · Acceso y tenancy | C-03 | CRITICO | `[ ]` |
 | C-05 | endpoints-turnos | 2 · Endpoints de agenda | C-04 | MEDIO | `[ ]` |
 | C-06 | endpoints-recursos | 2 · Endpoints de agenda | C-04 | BAJO | `[ ]` |
-| C-07 | gestion-pacientes | 2 · Endpoints de agenda | C-04 | BAJO | `[ ]` |
+| C-07 | gestion-pacientes | 2 · Endpoints de agenda | C-04 | BAJO | `[x]` |
 | C-08 | reprogramacion-turno | 3 · Operación de la agenda | C-05 | MEDIO | `[ ]` |
 | C-09 | admin-recursos-crud | 3 · Operación de la agenda | C-06 | BAJO | `[ ]` |
 | C-10 | bloqueo-sillon | 3 · Operación de la agenda | C-09 | ALTO | `[ ]` |

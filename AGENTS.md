@@ -98,7 +98,7 @@ El plan de implementación completo está en [CHANGES.md](CHANGES.md). Resumen:
 - **Total**: 15 changes en 6 fases (FASE 0-4 = MVP, FASE 5 = segunda etapa).
 - **Camino crítico MVP** (7): `C-01 cancelacion-y-estados-turno → C-02 persistencia-sqlite → C-03 capa-api-desacoplada → C-04 auth-rbac-tenancy → C-05 endpoints-turnos → C-11 frontend-shell → C-12 agenda-turnos-ui`.
 - **Primer change**: `C-01` (`cancelacion-y-estados-turno`).
-- **Completado**: `2026-10-15-crear-turno-sin-solapamientos` ✔ archivado (specs en `openspec/specs/crear-turno/spec.md`) · `2026-11-03-c-01-cancelacion-y-estados-turno` ✔ archivado (specs en `openspec/specs/gestionar-estados-turno/spec.md`) · `2026-11-03-c-02-persistencia-sqlite` ✔ archivado (specs en `openspec/specs/persistir-turnos/spec.md`).
+- **Completado**: `2026-10-15-crear-turno-sin-solapamientos` ✔ archivado · `2026-11-03-c-01-cancelacion-y-estados-turno` ✔ archivado · `2026-11-03-c-02-persistencia-sqlite` ✔ archivado · `2026-11-04-c-03-api-fastapi` ✔ archivado · `2026-11-05-c-04-auth-rbac-tenancy` ✔ archivado · `2026-11-08-c-05-endpoints-turnos` ✔ archivado · `2026-11-09-c-06-endpoints-recursos` ✔ archivado · `2026-11-09-c-07-gestion-pacientes` ✔ archivado (specs en `openspec/specs/gestionar-pacientes/spec.md`).
 
 **Antes de cualquier `/opsx:propose`**: leé [CHANGES.md](CHANGES.md), identificá las dependencias del change y los archivos de "Leer antes".
 

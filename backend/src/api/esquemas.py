@@ -10,16 +10,22 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-from src.domain.models import Profesional, Sillon, Turno
+from src.domain.models import Paciente, Profesional, Sillon, Turno
 
 # `YYYY-MM-DD` (ISO-8601, fecha completa).
 PATRON_FECHA = r"^\d{4}-\d{2}-\d{2}$"
 # `HH:MM` 24 h estricto: 00-23 : 00-59.
 PATRON_HORA = r"^([01]\d|2[0-3]):[0-5]\d$"
+# DNI de 8 dígitos numéricos (RN-06).
+PATRON_DNI = r"^\d{8}$"
+# Teléfono estándar (longitud 7 a 20 caracteres numéricos y separadores).
+PATRON_TELEFONO = r"^\+?[0-9\s\-\(\)]{7,20}$"
 
 # Campo de texto obligatorio y no vacío: se recortan extremos, pero se conservan
 # los espacios internos de nombres como "Paciente Ficticio 2".
 TextoRequerido = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+DniSintetico = Annotated[str, Field(pattern=PATRON_DNI, description="DNI ficticio de 8 dígitos")]
+TelefonoSintetico = Annotated[str, Field(pattern=PATRON_TELEFONO, description="Formato de teléfono")]
 
 
 class TurnoCrear(BaseModel):
@@ -138,4 +144,44 @@ class SillonRespuesta(BaseModel):
             equipamiento=sillon.equipamiento,
             activo=sillon.activo,
         )
+
+
+class PacienteCrear(BaseModel):
+    """Cuerpo de `POST /api/v1/pacientes` (C-07)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dni: DniSintetico
+    nombre: TextoRequerido
+    telefono: TelefonoSintetico
+
+
+class PacienteRespuesta(BaseModel):
+    """Salida de `POST /api/v1/pacientes` y `GET /api/v1/pacientes` (C-07)."""
+
+    id: int
+    tenant_id: int
+    dni: str
+    nombre: str
+    telefono: str
+
+    @classmethod
+    def desde_dominio(cls, paciente: Paciente) -> "PacienteRespuesta":
+        if paciente.id is None:
+            raise ValueError("El paciente debe tener un id asignado")
+        return cls(
+            id=paciente.id,
+            tenant_id=paciente.tenant_id,
+            dni=paciente.dni,
+            nombre=paciente.nombre,
+            telefono=paciente.telefono,
+        )
+
+
+class PacienteFiltro(BaseModel):
+    """Filtros opcionales para `GET /api/v1/pacientes`."""
+
+    dni: str | None = None
+    nombre: str | None = None
+
 

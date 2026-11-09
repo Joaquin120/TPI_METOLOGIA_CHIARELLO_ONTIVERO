@@ -71,6 +71,16 @@ class ErrorTurnoNoEncontrado(Exception):
         super().__init__(mensaje)
 
 
+class ErrorPacienteDuplicado(Exception):
+    """Ya existe un paciente con el mismo DNI en el tenant (C-07)."""
+
+    def __init__(
+        self,
+        mensaje: str = "Ya existe un paciente con el DNI indicado en este centro",
+    ) -> None:
+        super().__init__(mensaje)
+
+
 def respuesta_error(status_code: int, code: str, message: str) -> JSONResponse:
     """Construye la respuesta JSON con el envelope de error único."""
     return JSONResponse(
@@ -152,6 +162,12 @@ def _manejar_turno_no_encontrado(
     return respuesta_error(404, "TURNO_NO_ENCONTRADO", str(exc))
 
 
+def _manejar_paciente_duplicado(
+    _request: Request, exc: ErrorPacienteDuplicado
+) -> JSONResponse:
+    return respuesta_error(409, "PACIENTE_DUPLICADO", str(exc))
+
+
 def registrar_manejadores_de_errores(app: FastAPI) -> None:
     """Registra en `app` los handlers del envelope (reutilizable por la factoría)."""
     app.add_exception_handler(
@@ -167,3 +183,4 @@ def registrar_manejadores_de_errores(app: FastAPI) -> None:
     app.add_exception_handler(ErrorTokenInvalido, _manejar_token_invalido)
     app.add_exception_handler(ErrorAccesoDenegado, _manejar_acceso_denegado)
     app.add_exception_handler(ErrorTurnoNoEncontrado, _manejar_turno_no_encontrado)
+    app.add_exception_handler(ErrorPacienteDuplicado, _manejar_paciente_duplicado)

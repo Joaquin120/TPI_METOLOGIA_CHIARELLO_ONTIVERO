@@ -12,11 +12,11 @@ from src.infrastructure.database import abrir_conexion, migrar
 
 
 def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
-    """Las migraciones 001, 002 y 003 crean las tablas e índices, y son idempotentes."""
+    """Las migraciones 001 a 004 crean las tablas e índices, y son idempotentes."""
     ruta = tmp_path / "esquema.db"
     conexion = abrir_conexion(str(ruta))
     try:
-        assert migrar(conexion) == ["001_init.sql", "002_auth.sql", "003_recursos.sql"]
+        assert migrar(conexion) == ["001_init.sql", "002_auth.sql", "003_recursos.sql", "004_pacientes.sql"]
         # Segunda corrida: las migraciones ya registradas no se vuelven a aplicar.
         assert migrar(conexion) == []
 
@@ -32,7 +32,7 @@ def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
         aplicadas = conexion.execute(
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [fila[0] for fila in aplicadas] == ["001_init.sql", "002_auth.sql", "003_recursos.sql"]
+        assert [fila[0] for fila in aplicadas] == ["001_init.sql", "002_auth.sql", "003_recursos.sql", "004_pacientes.sql"]
 
         # Índice de solapamiento (tenant_id, fecha_hora_inicio) — design D4.
         columnas_indice = [
@@ -51,6 +51,15 @@ def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
             )
         ]
         assert columnas_indice_usuario == ["tenant_id", "email"]
+
+        # Índice de paciente (tenant_id, dni) — C-07.
+        columnas_indice_paciente = [
+            fila[2]
+            for fila in conexion.execute(
+                "PRAGMA index_info(idx_paciente_tenant_dni)"
+            )
+        ]
+        assert columnas_indice_paciente == ["tenant_id", "dni"]
     finally:
         conexion.close()
 
@@ -204,4 +213,40 @@ def test_esquema_003_recursos_columnas_y_defaults(tmp_path) -> None:
         assert fila_s[1] == 1
     finally:
         conexion.close()
+
+
+def test_esquema_004_paciente_restricciones(tmp_path) -> None:
+    """La migración 004 añade telefono y UNIQUE(tenant_id, dni) a la tabla paciente."""
+    ruta = tmp_path / "paciente_integridad.db"
+    conexion = abrir_conexion(str(ruta))
+    try:
+        migrar(conexion)
+        conexion.execute("INSERT INTO tenant (nombre) VALUES ('Clínica Pacientes')")
+        id_tenant = conexion.execute("SELECT id FROM tenant WHERE nombre = 'Clínica Pacientes'").fetchone()[0]
+
+        # Inserción con columna telefono
+        conexion.execute(
+            "INSERT INTO paciente (tenant_id, nombre, dni, telefono) VALUES (?, 'Paciente 1', '10000001', '+54 11 4000-0001')",
+            (id_tenant,),
+        )
+        conexion.commit()
+
+        # UNIQUE(tenant_id, dni) rechaza duplicado en el mismo tenant
+        with pytest.raises(sqlite3.IntegrityError):
+            conexion.execute(
+                "INSERT INTO paciente (tenant_id, nombre, dni, telefono) VALUES (?, 'Paciente 2', '10000001', '+54 11 4000-0002')",
+                (id_tenant,),
+            )
+
+        # Mismo DNI en otro tenant es admitido
+        conexion.execute("INSERT INTO tenant (nombre) VALUES ('Clínica Otra')")
+        id_tenant2 = conexion.execute("SELECT id FROM tenant WHERE nombre = 'Clínica Otra'").fetchone()[0]
+        conexion.execute(
+            "INSERT INTO paciente (tenant_id, nombre, dni, telefono) VALUES (?, 'Paciente 1', '10000001', '+54 11 4000-0001')",
+            (id_tenant2,),
+        )
+        conexion.commit()
+    finally:
+        conexion.close()
+
 
