@@ -185,3 +185,39 @@ class PacienteFiltro(BaseModel):
     nombre: str | None = None
 
 
+class MetricasTurnosRespuesta(BaseModel):
+    """Salida de `GET /api/v1/metricas/turnos` (C-08)."""
+
+    total: int
+    por_estado: dict[str, int]
+    tasa_cancelacion: float
+    fecha_desde: str | None = None
+    fecha_hasta: str | None = None
+
+
+class MetricaProfesionalItem(BaseModel):
+    """Item de distribución de turnos por profesional."""
+
+    profesional_id: int
+    nombre: str
+    total_turnos: int
+
+
+class MetricaSillonItem(BaseModel):
+    """Item de distribución de turnos por sillón."""
+
+    sillon_id: int
+    nombre: str
+    total_turnos: int
+
+
+class MetricasRecursosRespuesta(BaseModel):
+    """Salida de `GET /api/v1/metricas/recursos` (C-08)."""
+
+    profesionales: list[MetricaProfesionalItem]
+    sillones: list[MetricaSillonItem]
+    fecha_desde: str | None = None
+    fecha_hasta: str | None = None
+
+
+

@@ -81,6 +81,16 @@ class ErrorPacienteDuplicado(Exception):
         super().__init__(mensaje)
 
 
+class ErrorRangoFechasInvalido(Exception):
+    """El rango temporal es inválido (fecha_desde posterior a fecha_hasta) (C-08)."""
+
+    def __init__(
+        self,
+        mensaje: str = "La fecha desde no puede ser posterior a la fecha hasta",
+    ) -> None:
+        super().__init__(mensaje)
+
+
 def respuesta_error(status_code: int, code: str, message: str) -> JSONResponse:
     """Construye la respuesta JSON con el envelope de error único."""
     return JSONResponse(
@@ -168,6 +178,12 @@ def _manejar_paciente_duplicado(
     return respuesta_error(409, "PACIENTE_DUPLICADO", str(exc))
 
 
+def _manejar_rango_fechas_invalido(
+    _request: Request, exc: ErrorRangoFechasInvalido
+) -> JSONResponse:
+    return respuesta_error(422, "RANGO_FECHAS_INVALIDO", str(exc))
+
+
 def registrar_manejadores_de_errores(app: FastAPI) -> None:
     """Registra en `app` los handlers del envelope (reutilizable por la factoría)."""
     app.add_exception_handler(
@@ -184,3 +200,4 @@ def registrar_manejadores_de_errores(app: FastAPI) -> None:
     app.add_exception_handler(ErrorAccesoDenegado, _manejar_acceso_denegado)
     app.add_exception_handler(ErrorTurnoNoEncontrado, _manejar_turno_no_encontrado)
     app.add_exception_handler(ErrorPacienteDuplicado, _manejar_paciente_duplicado)
+    app.add_exception_handler(ErrorRangoFechasInvalido, _manejar_rango_fechas_invalido)

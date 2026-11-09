@@ -26,6 +26,7 @@ from src.api.seguridad import (
 )
 from src.domain.services import ServicioTurnos
 from src.infrastructure.database import abrir_conexion
+from src.repositories.metricas_sqlite import RepositorioMetricasSqlite
 from src.repositories.pacientes_sqlite import RepositorioPacientesSqlite
 from src.repositories.recursos import (
     RepositorioProfesionales,
@@ -193,5 +194,21 @@ def get_repositorio_pacientes(
         yield RepositorioPacientesSqlite(conexion)
     finally:
         conexion.close()
+
+
+def obtener_repositorio_metricas(
+    request: Request,
+) -> Iterator[RepositorioMetricasSqlite]:
+    """Dependencia de FastAPI: conexión por petición y repositorio de métricas (C-08)."""
+    conexion = abrir_conexion(request.app.state.ruta_db)
+    try:
+        yield RepositorioMetricasSqlite(conexion)
+    finally:
+        conexion.close()
+
+
+requerir_roles = requerir_rol
+get_repositorio_metricas = obtener_repositorio_metricas
+
 
 
