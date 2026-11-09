@@ -36,6 +36,44 @@ def test_modelos_dominio_disponibles() -> None:
     assert turno.estado == "CONFIRMADO"
 
 
+def test_modelos_profesional_y_sillon_atributos_operativos() -> None:
+    """Task 1.2 (C-06): Profesional y Sillon admiten atributos operativos con defaults retrocompatibles."""
+    # Instanciación mínima con defaults
+    p_defecto = Profesional(nombre="Dra. Defecto")
+    assert p_defecto.nombre == "Dra. Defecto"
+    assert p_defecto.id is None
+    assert p_defecto.matricula is None
+    assert p_defecto.especialidad is None
+    assert p_defecto.activo is True
+
+    s_defecto = Sillon(nombre="Sillón 1")
+    assert s_defecto.nombre == "Sillón 1"
+    assert s_defecto.id is None
+    assert s_defecto.equipamiento is None
+    assert s_defecto.activo is True
+
+    # Instanciación completa
+    p_completo = Profesional(
+        nombre="Dr. Gómez",
+        id=5,
+        matricula="MP-9999",
+        especialidad="Endodoncia",
+        activo=False,
+    )
+    assert p_completo.matricula == "MP-9999"
+    assert p_completo.especialidad == "Endodoncia"
+    assert p_completo.activo is False
+
+    s_completo = Sillon(
+        nombre="Sillón Quirúrgico",
+        id=3,
+        equipamiento="Turbina LED + Rayos X",
+        activo=False,
+    )
+    assert s_completo.equipamiento == "Turbina LED + Rayos X"
+    assert s_completo.activo is False
+
+
 # ---------------------------------------------------------------------------
 # Task 2: excepciones de dominio
 # ---------------------------------------------------------------------------

@@ -8,7 +8,16 @@ Regla dura 3: todos los datos son sintéticos.
 import pytest
 from pydantic import ValidationError
 
-from src.api.esquemas import TurnoCrear, TurnoRespuesta
+from src.api.esquemas import (
+    LoginSolicitud,
+    ProfesionalRespuesta,
+    SillonRespuesta,
+    TokenRespuesta,
+    TurnoCambioEstado,
+    TurnoCrear,
+    TurnoRespuesta,
+    UsuarioPerfilRespuesta,
+)
 from src.domain.models import CANCELADO, CONFIRMADO, Profesional, Sillon, Turno
 
 
@@ -197,5 +206,52 @@ def test_turno_cambio_estado_rechaza_campos_extra() -> None:
 
     with pytest.raises(ValidationError):
         TurnoCambioEstado(accion="cancelar", tenant_id=1)
+
+
+# ---------------------------------------------------------------------------
+# C-06: Task 3.1 - RED/GREEN de `ProfesionalRespuesta` y `SillonRespuesta`
+# ---------------------------------------------------------------------------
+
+
+def test_profesional_respuesta_desde_dominio() -> None:
+    """Mapea entidad Profesional a ProfesionalRespuesta sin fugar tenant_id."""
+    prof = Profesional(
+        id=10,
+        nombre="Dr. Ortodoncista",
+        matricula="MP-8888",
+        especialidad="Ortodoncia",
+        activo=True,
+    )
+    res = ProfesionalRespuesta.desde_dominio(prof)
+    assert res.id == 10
+    assert res.nombre == "Dr. Ortodoncista"
+    assert res.matricula == "MP-8888"
+    assert res.especialidad == "Ortodoncia"
+    assert res.activo is True
+
+    # Comprobación de que tenant_id no forma parte del esquema
+    data = res.model_dump()
+    assert "tenant_id" not in data
+    assert set(data.keys()) == {"id", "nombre", "matricula", "especialidad", "activo"}
+
+
+def test_sillon_respuesta_desde_dominio() -> None:
+    """Mapea entidad Sillon a SillonRespuesta sin fugar tenant_id."""
+    sil = Sillon(
+        id=20,
+        nombre="Sillón 1",
+        equipamiento="Turbina LED",
+        activo=False,
+    )
+    res = SillonRespuesta.desde_dominio(sil)
+    assert res.id == 20
+    assert res.nombre == "Sillón 1"
+    assert res.equipamiento == "Turbina LED"
+    assert res.activo is False
+
+    data = res.model_dump()
+    assert "tenant_id" not in data
+    assert set(data.keys()) == {"id", "nombre", "equipamiento", "activo"}
+
 
 

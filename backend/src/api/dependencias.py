@@ -26,6 +26,10 @@ from src.api.seguridad import (
 )
 from src.domain.services import ServicioTurnos
 from src.infrastructure.database import abrir_conexion
+from src.repositories.recursos import (
+    RepositorioProfesionales,
+    RepositorioSillones,
+)
 from src.repositories.turnos_sqlite import RepositorioTurnosSqlite
 
 
@@ -146,3 +150,35 @@ def contexto_turnos(
         yield ContextoTurnos(servicio=servicio, tenant_id=tenant_id)
     finally:
         conexion.close()
+
+
+@dataclass(frozen=True)
+class ContextoRecursos:
+    """Repositorios de recursos ya cableados al tenant resuelto de la petición (C-06)."""
+
+    profesionales: RepositorioProfesionales
+    sillones: RepositorioSillones
+    tenant_id: int
+
+
+def contexto_recursos(
+    request: Request,
+    usuario: ContextoUsuario = Depends(obtener_usuario_actual),
+) -> Iterator[ContextoRecursos]:
+    """Dependencia de FastAPI: conexión por petición y repositorios de recursos del tenant."""
+    conexion = abrir_conexion(request.app.state.ruta_db)
+    try:
+        tenant_id = usuario.tenant_id
+        fila = conexion.execute(
+            "SELECT 1 FROM tenant WHERE id = ?", (tenant_id,)
+        ).fetchone()
+        if fila is None:
+            raise ErrorTenantNoResuelto(f"El tenant {tenant_id} no existe")
+        yield ContextoRecursos(
+            profesionales=RepositorioProfesionales(conexion, tenant_id=tenant_id),
+            sillones=RepositorioSillones(conexion, tenant_id=tenant_id),
+            tenant_id=tenant_id,
+        )
+    finally:
+        conexion.close()
+

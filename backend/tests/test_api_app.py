@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from src.api.app import create_app
 from src.domain.exceptions import TransicionInvalidaError
 from src.infrastructure.database import abrir_conexion
+from src.infrastructure.seed import PROFESIONALES_DEFECTO, SILLONES_DEFECTO
 
 
 def _contar(conexion: sqlite3.Connection, tabla: str) -> int:
@@ -47,8 +48,8 @@ def test_create_app_devuelve_fastapi_y_migra_la_base(tmp_path: Path) -> None:
     estado = _introspeccion(ruta)
     assert "001_init.sql" in estado["migraciones"]
     assert estado["tenants"] == 1
-    assert estado["profesionales"] == 2
-    assert estado["sillones"] == 2
+    assert estado["profesionales"] == len(PROFESIONALES_DEFECTO)
+    assert estado["sillones"] == len(SILLONES_DEFECTO)
 
 
 def test_create_app_sin_sembrar_no_inserta_datos(tmp_path: Path) -> None:
@@ -72,8 +73,8 @@ def test_create_app_con_seed_es_idempotente(tmp_path: Path) -> None:
 
     estado = _introspeccion(ruta)
     assert estado["tenants"] == 1
-    assert estado["profesionales"] == 2
-    assert estado["sillones"] == 2
+    assert estado["profesionales"] == len(PROFESIONALES_DEFECTO)
+    assert estado["sillones"] == len(SILLONES_DEFECTO)
 
 
 def test_create_app_guarda_configuracion_en_state(tmp_path: Path) -> None:

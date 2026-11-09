@@ -113,15 +113,15 @@
     "status": "missing"
   },
   "active_change": {
-    "name": "c-05-endpoints-turnos",
-    "roadmap_id": "C-05",
-    "roadmap_slug": "endpoints-turnos",
-    "path": "openspec/changes/archive/2026-11-08-c-05-endpoints-turnos",
+    "name": "c-06-endpoints-recursos",
+    "roadmap_id": "C-06",
+    "roadmap_slug": "endpoints-recursos",
+    "path": "openspec/changes/archive/2026-11-09-c-06-endpoints-recursos",
     "schema": "spec-driven",
     "phase": "archive",
     "status": "archived",
-    "tests": "155 passed, cov 97%",
-    "next_action": "/opsx:propose c-06-endpoints-recursos",
-    "recorded_at": "2026-11-08"
+    "tests": "170 passed, cov 97%",
+    "next_action": "/opsx:propose c-07-gestion-pacientes",
+    "recorded_at": "2026-11-09"
   }
 }

@@ -15,7 +15,7 @@ from src.infrastructure.seed import (
 
 
 def test_seed_carga_un_tenant_dos_profesionales_y_dos_sillones(tmp_path) -> None:
-    """La semilla crea exactamente 1 tenant, 2 profesionales, 2 sillones y 3 usuarios sintéticos."""
+    """La semilla crea 1 tenant, profesionales y sillones con atributos operativos sintéticos."""
     ruta = tmp_path / "seed_inicial.db"
     conexion = abrir_conexion(str(ruta))
     try:
@@ -27,17 +27,17 @@ def test_seed_carga_un_tenant_dos_profesionales_y_dos_sillones(tmp_path) -> None
         assert tenants[0][0] == TENANT_DEFECTO
 
         profesionales = [
-            fila[0]
+            (fila[0], fila[1], fila[2], fila[3])
             for fila in conexion.execute(
-                "SELECT nombre FROM profesional ORDER BY id"
+                "SELECT nombre, matricula, especialidad, activo FROM profesional ORDER BY id"
             ).fetchall()
         ]
         assert tuple(profesionales) == PROFESIONALES_DEFECTO
 
         sillones = [
-            fila[0]
+            (fila[0], fila[1], fila[2])
             for fila in conexion.execute(
-                "SELECT nombre FROM sillon ORDER BY id"
+                "SELECT nombre, equipamiento, activo FROM sillon ORDER BY id"
             ).fetchall()
         ]
         assert tuple(sillones) == SILLONES_DEFECTO
@@ -70,8 +70,8 @@ def test_seed_es_idempotente(tmp_path) -> None:
         cantidad_usuarios = conexion.execute("SELECT count(*) FROM usuario").fetchone()[0]
 
         assert cantidad_tenants == 1
-        assert cantidad_prof == 2
-        assert cantidad_sillones == 2
+        assert cantidad_prof == len(PROFESIONALES_DEFECTO)
+        assert cantidad_sillones == len(SILLONES_DEFECTO)
         assert cantidad_usuarios == 3
     finally:
         conexion.close()

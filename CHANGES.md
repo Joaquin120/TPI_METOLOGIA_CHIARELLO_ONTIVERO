@@ -232,12 +232,25 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ---
 
 ### [C-06] `endpoints-recursos`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado y archivado (`openspec/changes/archive/2026-11-09-c-06-endpoints-recursos/`)
 - **Scope**: Consulta de recursos para asignar turnos (`F-04`, `F-05`)
   - `GET /api/v1/profesionales` — lista del tenant, con `matricula`, `especialidad`, `activo`
   - `GET /api/v1/sillones` — lista del tenant, con `equipamiento` y `activo`
-  - Seed sintético ampliado (datos ficticios: `Dr. Ejemplo`, `Sillón 1`)
-  - Tests: listados acotados al tenant, inclusión/exclusión de recursos inactivos según decisión de `PA-01` adoptada en el proposal
+  - Seed sintético ampliado (datos ficticios: `Dr. Ejemplo`, `Sillón 1`, `Dr. Inactivo`, `Sillón 3`)
+  - Tests: listados acotados al tenant, inclusión/exclusión de recursos inactivos según decisión de `PA-01` (`solo_activos: bool = True`)
+  - Tests: suite de 170 tests passing en SQLite real con 97% de cobertura global y 100% en dominio, repositorios y router de recursos
+- **Auditoría de Trazabilidad OpenSpec (SDD)**:
+  - Validado formalmente con la skill `.atl/skills/validador-trazabilidad-openspec.md`:
+    1. *Fidelidad normativa*: 9 escenarios de spec verificados con pytest (200, 401) con envelope estándar y filtrado `solo_activos`.
+    2. *Pureza de dominio*: 0 dependencias externas en `src/domain/` (guard tests 5/5 passing).
+    3. *Seguridad y aislamiento*: `tenant_id` derivado forzosamente desde JWT (`ContextoUsuario`), aislamiento inter-tenant demostrado en SQLite real.
+    4. *Sincronización de artefactos*: `tasks.md` (8/8 all_done), roadmap `CHANGES.md` y `.active-orchestrator-state.json`.
+  - *Dictamen*: **APROBADO**.
+- **Herramientas MCP utilizadas en este change**:
+  - Servidor **`engram`**:
+    - `mem_context`: Recuperación del contexto de sesiones previas al iniciar propose y apply.
+    - `mem_save`: Persistencia proactiva de arquitectura al completar propose, apply y archive.
+    - `mem_judge`: Arbitraje de relaciones y conciliación de observaciones de memoria de C-06.
 - **Dependencias**: `C-04`
 - **Governance**: BAJO
 - **Leer antes**:
@@ -415,7 +428,7 @@ Orden de ejecución planificado (pendiente):
 2. ~~`C-02` **persistencia-sqlite**~~ ✔ completado (2026-11-03)
 3. ~~`C-03` **capa-api-desacoplada**~~ ✔ completado (2026-11-05)
 4. ~~`C-04` auth-rbac-tenancy~~ ✔ completado (2026-11-05)
-5. `C-05` endpoints-turnos · `C-06` endpoints-recursos · `C-07` gestion-pacientes (paralelo)
+5. ~~`C-05` endpoints-turnos~~ ✔ completado · ~~`C-06` endpoints-recursos~~ ✔ completado · `C-07` gestion-pacientes (paralelo)
 6. `C-08` reprogramacion-turno · `C-09` admin-recursos-crud · `C-11` frontend-shell
 7. `C-10` bloqueo-sillon · `C-12` agenda-turnos-ui — **cierre del MVP**
 

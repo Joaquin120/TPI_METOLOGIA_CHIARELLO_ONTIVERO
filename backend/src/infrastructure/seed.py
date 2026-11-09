@@ -5,8 +5,20 @@ import sqlite3
 from src.api.seguridad import hashear_password
 
 TENANT_DEFECTO = "Clínica Ejemplo"
-PROFESIONALES_DEFECTO = ("Dr. Ejemplo", "Dra. Ejemplo")
-SILLONES_DEFECTO = ("Sillón 1", "Sillón 2")
+
+# Datos sintéticos enriquecidos (C-06, F-04, F-05, PA-01, RN-06)
+PROFESIONALES_DEFECTO = (
+    ("Dr. Ejemplo", "MP-1001", "Odontología General", 1),
+    ("Dra. Ejemplo", "MP-1002", "Ortodoncia", 1),
+    ("Dr. Inactivo", "MP-1003", "Cirugía Maxilofacial", 0),
+)
+
+SILLONES_DEFECTO = (
+    ("Sillón 1", "Sillón Odontológico Básico", 1),
+    ("Sillón 2", "Equipo Completo con Rayos X", 1),
+    ("Sillón 3", "En mantenimiento técnico", 0),
+)
+
 PASSWORD_DEFECTO = "secreto123"
 
 USUARIOS_DEFECTO = (
@@ -17,7 +29,7 @@ USUARIOS_DEFECTO = (
 
 
 def sembrar_datos_iniciales(conexion: sqlite3.Connection) -> None:
-    """Siembra 1 tenant, 2 profesionales, 2 sillones y 3 usuarios de forma idempotente.
+    """Siembra 1 tenant, 3 profesionales, 3 sillones y 3 usuarios de forma idempotente.
 
     Regla dura 3 / RN-06: utiliza únicamente datos sintéticos.
     """
@@ -31,16 +43,29 @@ def sembrar_datos_iniciales(conexion: sqlite3.Connection) -> None:
     ).fetchone()
     tenant_id = fila_tenant[0] if isinstance(fila_tenant, (tuple, list)) else fila_tenant["id"]
 
-    for prof in PROFESIONALES_DEFECTO:
+    for nombre, matricula, especialidad, activo in PROFESIONALES_DEFECTO:
         conexion.execute(
-            "INSERT OR IGNORE INTO profesional (tenant_id, nombre) VALUES (?, ?)",
-            (tenant_id, prof),
+            """
+            INSERT INTO profesional (tenant_id, nombre, matricula, especialidad, activo)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(tenant_id, nombre) DO UPDATE SET
+                matricula = excluded.matricula,
+                especialidad = excluded.especialidad,
+                activo = excluded.activo
+            """,
+            (tenant_id, nombre, matricula, especialidad, activo),
         )
 
-    for sil in SILLONES_DEFECTO:
+    for nombre, equipamiento, activo in SILLONES_DEFECTO:
         conexion.execute(
-            "INSERT OR IGNORE INTO sillon (tenant_id, nombre) VALUES (?, ?)",
-            (tenant_id, sil),
+            """
+            INSERT INTO sillon (tenant_id, nombre, equipamiento, activo)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(tenant_id, nombre) DO UPDATE SET
+                equipamiento = excluded.equipamiento,
+                activo = excluded.activo
+            """,
+            (tenant_id, nombre, equipamiento, activo),
         )
 
     hash_password = hashear_password(PASSWORD_DEFECTO)

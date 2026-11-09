@@ -12,11 +12,11 @@ from src.infrastructure.database import abrir_conexion, migrar
 
 
 def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
-    """Las migraciones 001 y 002 crean las tablas e índices, y son idempotentes."""
+    """Las migraciones 001, 002 y 003 crean las tablas e índices, y son idempotentes."""
     ruta = tmp_path / "esquema.db"
     conexion = abrir_conexion(str(ruta))
     try:
-        assert migrar(conexion) == ["001_init.sql", "002_auth.sql"]
+        assert migrar(conexion) == ["001_init.sql", "002_auth.sql", "003_recursos.sql"]
         # Segunda corrida: las migraciones ya registradas no se vuelven a aplicar.
         assert migrar(conexion) == []
 
@@ -32,7 +32,7 @@ def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
         aplicadas = conexion.execute(
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [fila[0] for fila in aplicadas] == ["001_init.sql", "002_auth.sql"]
+        assert [fila[0] for fila in aplicadas] == ["001_init.sql", "002_auth.sql", "003_recursos.sql"]
 
         # Índice de solapamiento (tenant_id, fecha_hora_inicio) — design D4.
         columnas_indice = [
@@ -154,3 +154,54 @@ def test_esquema_001_aplica_check_unicos_y_fk(tmp_path) -> None:
             )
     finally:
         conexion.close()
+
+
+def test_esquema_003_recursos_columnas_y_defaults(tmp_path) -> None:
+    """La migración 003 añade columnas a profesional y sillon con defaults correctos."""
+    ruta = tmp_path / "recursos_esquema.db"
+    conexion = abrir_conexion(str(ruta))
+    try:
+        migrar(conexion)
+        # Columnas de profesional
+        info_prof = {
+            fila[1]: fila[4]  # name: dflt_value
+            for fila in conexion.execute("PRAGMA table_info(profesional)")
+        }
+        assert "matricula" in info_prof
+        assert "especialidad" in info_prof
+        assert "activo" in info_prof
+        assert str(info_prof["activo"]) == "1"
+
+        # Columnas de sillon
+        info_sillon = {
+            fila[1]: fila[4]
+            for fila in conexion.execute("PRAGMA table_info(sillon)")
+        }
+        assert "equipamiento" in info_sillon
+        assert "activo" in info_sillon
+        assert str(info_sillon["activo"]) == "1"
+
+        # Inserción sin columnas nuevas adopta defaults
+        conexion.execute("INSERT INTO tenant (nombre) VALUES ('Clínica Recursos')")
+        id_tenant = conexion.execute("SELECT id FROM tenant WHERE nombre = 'Clínica Recursos'").fetchone()[0]
+        conexion.execute(
+            "INSERT INTO profesional (tenant_id, nombre) VALUES (?, 'Dr. Default')",
+            (id_tenant,),
+        )
+        conexion.execute(
+            "INSERT INTO sillon (tenant_id, nombre) VALUES (?, 'Sillón Default')",
+            (id_tenant,),
+        )
+        conexion.commit()
+
+        fila_p = conexion.execute("SELECT matricula, especialidad, activo FROM profesional WHERE nombre = 'Dr. Default'").fetchone()
+        assert fila_p[0] is None
+        assert fila_p[1] is None
+        assert fila_p[2] == 1
+
+        fila_s = conexion.execute("SELECT equipamiento, activo FROM sillon WHERE nombre = 'Sillón Default'").fetchone()
+        assert fila_s[0] is None
+        assert fila_s[1] == 1
+    finally:
+        conexion.close()
+

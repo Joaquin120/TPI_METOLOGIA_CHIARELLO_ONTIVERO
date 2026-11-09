@@ -10,7 +10,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-from src.domain.models import Turno
+from src.domain.models import Profesional, Sillon, Turno
 
 # `YYYY-MM-DD` (ISO-8601, fecha completa).
 PATRON_FECHA = r"^\d{4}-\d{2}-\d{2}$"
@@ -96,3 +96,46 @@ class UsuarioPerfilRespuesta(BaseModel):
     tenant_id: int
     rol: str
     profesional_id: int | None = None
+
+
+class ProfesionalRespuesta(BaseModel):
+    """Salida de cada ítem de `GET /api/v1/profesionales` (C-06, design D4)."""
+
+    id: int
+    nombre: str
+    matricula: str | None = None
+    especialidad: str | None = None
+    activo: bool
+
+    @classmethod
+    def desde_dominio(cls, profesional: Profesional) -> "ProfesionalRespuesta":
+        if profesional.id is None:
+            raise ValueError("El profesional debe tener un id asignado")
+        return cls(
+            id=profesional.id,
+            nombre=profesional.nombre,
+            matricula=profesional.matricula,
+            especialidad=profesional.especialidad,
+            activo=profesional.activo,
+        )
+
+
+class SillonRespuesta(BaseModel):
+    """Salida de cada ítem de `GET /api/v1/sillones` (C-06, design D4)."""
+
+    id: int
+    nombre: str
+    equipamiento: str | None = None
+    activo: bool
+
+    @classmethod
+    def desde_dominio(cls, sillon: Sillon) -> "SillonRespuesta":
+        if sillon.id is None:
+            raise ValueError("El sillón debe tener un id asignado")
+        return cls(
+            id=sillon.id,
+            nombre=sillon.nombre,
+            equipamiento=sillon.equipamiento,
+            activo=sillon.activo,
+        )
+

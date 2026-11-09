@@ -27,24 +27,34 @@ class RepositorioProfesionales:
     def obtener_por_id(self, id_: int) -> Profesional | None:
         """Obtiene el modelo Profesional por su id dentro del tenant."""
         fila = self._conexion.execute(
-            "SELECT id, nombre FROM profesional WHERE tenant_id = ? AND id = ?",
+            "SELECT id, nombre, matricula, especialidad, activo FROM profesional WHERE tenant_id = ? AND id = ?",
             (self._tenant_id, id_),
         ).fetchone()
         if fila is None:
             return None
-        nombre = fila[1] if isinstance(fila, (tuple, list)) else fila["nombre"]
-        return Profesional(nombre=nombre, id=id_)
+        return Profesional(
+            id=fila[0] if isinstance(fila, (tuple, list)) else fila["id"],
+            nombre=fila[1] if isinstance(fila, (tuple, list)) else fila["nombre"],
+            matricula=fila[2] if isinstance(fila, (tuple, list)) else fila["matricula"],
+            especialidad=fila[3] if isinstance(fila, (tuple, list)) else fila["especialidad"],
+            activo=bool(fila[4] if isinstance(fila, (tuple, list)) else fila["activo"]),
+        )
 
-    def listar(self) -> list[Profesional]:
-        """Lista todos los profesionales del tenant."""
-        filas = self._conexion.execute(
-            "SELECT id, nombre FROM profesional WHERE tenant_id = ? ORDER BY id",
-            (self._tenant_id,),
-        ).fetchall()
+    def listar(self, solo_activos: bool = True) -> list[Profesional]:
+        """Lista los profesionales del tenant, con filtro opcional por activo."""
+        consulta = (
+            "SELECT id, nombre, matricula, especialidad, activo FROM profesional WHERE tenant_id = ? AND activo = 1 ORDER BY id"
+            if solo_activos
+            else "SELECT id, nombre, matricula, especialidad, activo FROM profesional WHERE tenant_id = ? ORDER BY id"
+        )
+        filas = self._conexion.execute(consulta, (self._tenant_id,)).fetchall()
         return [
             Profesional(
                 id=fila[0] if isinstance(fila, (tuple, list)) else fila["id"],
                 nombre=fila[1] if isinstance(fila, (tuple, list)) else fila["nombre"],
+                matricula=fila[2] if isinstance(fila, (tuple, list)) else fila["matricula"],
+                especialidad=fila[3] if isinstance(fila, (tuple, list)) else fila["especialidad"],
+                activo=bool(fila[4] if isinstance(fila, (tuple, list)) else fila["activo"]),
             )
             for fila in filas
         ]
@@ -72,24 +82,32 @@ class RepositorioSillones:
     def obtener_por_id(self, id_: int) -> Sillon | None:
         """Obtiene el modelo Sillon por su id dentro del tenant."""
         fila = self._conexion.execute(
-            "SELECT id, nombre FROM sillon WHERE tenant_id = ? AND id = ?",
+            "SELECT id, nombre, equipamiento, activo FROM sillon WHERE tenant_id = ? AND id = ?",
             (self._tenant_id, id_),
         ).fetchone()
         if fila is None:
             return None
-        nombre = fila[1] if isinstance(fila, (tuple, list)) else fila["nombre"]
-        return Sillon(nombre=nombre, id=id_)
+        return Sillon(
+            id=fila[0] if isinstance(fila, (tuple, list)) else fila["id"],
+            nombre=fila[1] if isinstance(fila, (tuple, list)) else fila["nombre"],
+            equipamiento=fila[2] if isinstance(fila, (tuple, list)) else fila["equipamiento"],
+            activo=bool(fila[3] if isinstance(fila, (tuple, list)) else fila["activo"]),
+        )
 
-    def listar(self) -> list[Sillon]:
-        """Lista todos los sillones del tenant."""
-        filas = self._conexion.execute(
-            "SELECT id, nombre FROM sillon WHERE tenant_id = ? ORDER BY id",
-            (self._tenant_id,),
-        ).fetchall()
+    def listar(self, solo_activos: bool = True) -> list[Sillon]:
+        """Lista los sillones del tenant, con filtro opcional por activo."""
+        consulta = (
+            "SELECT id, nombre, equipamiento, activo FROM sillon WHERE tenant_id = ? AND activo = 1 ORDER BY id"
+            if solo_activos
+            else "SELECT id, nombre, equipamiento, activo FROM sillon WHERE tenant_id = ? ORDER BY id"
+        )
+        filas = self._conexion.execute(consulta, (self._tenant_id,)).fetchall()
         return [
             Sillon(
                 id=fila[0] if isinstance(fila, (tuple, list)) else fila["id"],
                 nombre=fila[1] if isinstance(fila, (tuple, list)) else fila["nombre"],
+                equipamiento=fila[2] if isinstance(fila, (tuple, list)) else fila["equipamiento"],
+                activo=bool(fila[3] if isinstance(fila, (tuple, list)) else fila["activo"]),
             )
             for fila in filas
         ]

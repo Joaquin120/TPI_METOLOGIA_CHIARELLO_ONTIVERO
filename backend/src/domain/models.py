@@ -21,6 +21,9 @@ class Profesional:
 
     nombre: str
     id: int | None = None
+    matricula: str | None = None
+    especialidad: str | None = None
+    activo: bool = True
 
 
 @dataclass(frozen=True)
@@ -29,6 +32,8 @@ class Sillon:
 
     nombre: str
     id: int | None = None
+    equipamiento: str | None = None
+    activo: bool = True
 
 
 @dataclass(frozen=True)
