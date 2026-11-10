@@ -26,6 +26,18 @@ export async function cambiarEstadoTurno(
   return clienteApi.patch<Turno>(`/turnos/${id}/estado`, { accion });
 }
 
+export async function confirmarTurno(id: number): Promise<Turno> {
+  return cambiarEstadoTurno(id, 'confirmar');
+}
+
+export async function cancelarTurno(id: number): Promise<Turno> {
+  return cambiarEstadoTurno(id, 'cancelar');
+}
+
+export async function completarTurno(id: number): Promise<Turno> {
+  return cambiarEstadoTurno(id, 'completar');
+}
+
 export async function reprogramarTurno(
   id: number,
   datos: ReprogramarTurnoPeticion

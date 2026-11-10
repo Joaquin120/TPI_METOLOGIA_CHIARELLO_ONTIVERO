@@ -403,7 +403,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ---
 
 ### [C-12] `agenda-turnos-ui`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-10 en `openspec/changes/archive/2026-11-10-c-12-agenda-turnos-ui/` (specs en `openspec/specs/cliente-agenda-turnos/spec.md`)
 - **Scope**: UI operativa de la agenda sobre la API existente
   - Lista de turnos con filtros por fecha, profesional y sillón (F-02)
   - Formulario de alta de turno: selección de paciente, profesional, sillón, fecha y horario; muestra `SolapamientoProfesionalError` / `SolapamientoSillonError` como mensajes de negocio (F-01)
@@ -532,7 +532,7 @@ Orden de ejecución planificado (pendiente):
 | C-09 | admin-recursos-crud | 3 · Operación de la agenda | C-06 | BAJO | `[ ]` |
 | C-10 | bloqueo-sillon | 3 · Operación de la agenda | C-09 | ALTO | `[ ]` |
 | C-11 | frontend-shell | 4 · Frontend web | C-05, C-06, C-07 | BAJO | `[x]` |
-| C-12 | agenda-turnos-ui | 4 · Frontend web | C-11 | MEDIO | `[ ]` |
+| C-12 | agenda-turnos-ui | 4 · Frontend web | C-11 | MEDIO | `[x]` |
 | C-13 | agenda-matricial | 5 · Segunda etapa | C-12 | MEDIO | `[ ]` |
 | C-14 | notificaciones-whatsapp | 5 · Segunda etapa | C-05 | ALTO | `[ ]` |
 | C-15 | lista-espera | 5 · Segunda etapa | C-14 | MEDIO | `[ ]` |

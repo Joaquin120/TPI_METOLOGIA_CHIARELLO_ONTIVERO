@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>DentalSaaS — Design System Componentes</title>
+  <link rel="stylesheet" href="tokens.css">
+  <script src="brand.js"></script>
+  <style>
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--color-bg-app);
+      color: var(--color-text-main);
+      padding: 2rem;
+    }
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .preview-header img {
+      width: 48px;
+      height: 48px;
+    }
+    .section-title {
+      font-size: var(--font-size-xl);
+      margin-bottom: 1rem;
+      color: var(--color-primary);
+    }
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .card {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-confirmado {
+      background: var(--color-estado-confirmado-bg);
+      color: var(--color-estado-confirmado);
+    }
+    .badge-pendiente {
+      background: var(--color-estado-pendiente-bg);
+      color: var(--color-estado-pendiente);
+    }
+    .badge-cancelado {
+      background: var(--color-estado-cancelado-bg);
+      color: var(--color-estado-cancelado);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background var(--transition-fast);
+    }
+    .btn-primary {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+    .btn-primary:hover {
+      background: var(--color-primary-hover);
+    }
+    .btn-outline {
+      background: transparent;
+      border-color: var(--color-border);
+      color: var(--color-text-main);
+    }
+    .turno-card {
+      border-left: 4px solid var(--color-primary);
+      padding: 1rem;
+      background: var(--color-bg-surface);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 0.75rem;
+    }
+    .turno-card.confirmado { border-left-color: var(--color-estado-confirmado); }
+    .turno-card.pendiente { border-left-color: var(--color-estado-pendiente); }
+    .turno-card.cancelado { border-left-color: var(--color-estado-cancelado); opacity: 0.7; }
+  </style>
+</head>
+<body>
+  <div class="preview-header">
+    <img src="assets/logo.svg" alt="Logo">
+    <div>
+      <h1 data-brand-name>DentalSaaS</h1>
+      <p style="color: var(--color-text-muted);">Design System — Biblioteca de Componentes Clínicos</p>
+    </div>
+  </div>
+
+  <h2 class="section-title">Estados de Turno (Insignias y Tarjetas)</h2>
+  <div class="component-grid">
+    <div class="card">
+      <span class="badge badge-confirmado">CONFIRMADO</span>
+      <div class="turno-card confirmado" style="margin-top: 1rem;">
+        <strong>10:00 - 10:30</strong> · Paciente Pérez<br>
+        <small style="color: var(--color-text-muted);">Dr. Ejemplo · Sillón 1</small>
+      </div>
+    </div>
+    <div class="card">
+      <span class="badge badge-pendiente">PENDIENTE</span>
+      <div class="turno-card pendiente" style="margin-top: 1rem;">
+        <strong>11:00 - 11:30</strong> · Paciente Gómez<br>
+        <small style="color: var(--color-text-muted);">Dra. Ejemplo · Sillón 2</small>
+      </div>
+    </div>
+    <div class="card">
+      <span class="badge badge-cancelado">CANCELADO</span>
+      <div class="turno-card cancelado" style="margin-top: 1rem;">
+        <strong>12:00 - 12:30</strong> · Paciente Ruiz<br>
+        <small style="color: var(--color-text-muted);">Dr. Ejemplo · Recursos liberados</small>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Controles Operativos</h2>
+  <div class="card" style="display: flex; gap: 1rem;">
+    <button class="btn btn-primary">+ Nuevo Turno</button>
+    <button class="btn btn-outline">Filtrar Agenda</button>
+    <button class="btn btn-outline">Confirmar Cita</button>
+  </div>
+</body>
+</html>
+
