@@ -24,6 +24,7 @@ from src.api.seguridad import (
     TokenInvalidoError,
     decodificar_token_acceso,
 )
+from src.domain.notificaciones import NotificacionesService
 from src.domain.services import ServicioTurnos
 from src.infrastructure.database import abrir_conexion
 from src.repositories.auditoria_sqlite import RepositorioAuditoriaSqlite
@@ -150,9 +151,16 @@ def contexto_turnos(
             raise ErrorTenantNoResuelto(f"El tenant {tenant_id} no existe")
         repo_turnos = RepositorioTurnosSqlite(conexion, tenant_id=tenant_id)
         repo_bloqueos = RepositorioBloqueosSqlite(conexion, tenant_id=tenant_id)
+        proveedor_whatsapp = getattr(request.app.state, "proveedor_whatsapp", None)
+        servicio_notificaciones = (
+            NotificacionesService(proveedor=proveedor_whatsapp)
+            if proveedor_whatsapp is not None
+            else None
+        )
         servicio = ServicioTurnos(
             repositorio=repo_turnos,
             puerto_bloqueos=repo_bloqueos,
+            servicio_notificaciones=servicio_notificaciones,
         )
         yield ContextoTurnos(servicio=servicio, tenant_id=tenant_id)
     finally:

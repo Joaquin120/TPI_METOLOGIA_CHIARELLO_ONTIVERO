@@ -1,6 +1,7 @@
 """Servicio de dominio para el agendamiento de turnos odontológicos."""
 
 from dataclasses import replace
+import logging
 
 from src.domain.exceptions import (
     BloqueoNoEncontradoError,
@@ -22,7 +23,10 @@ from src.domain.models import (
     Sillon,
     Turno,
 )
+from src.domain.notificaciones import NotificacionesService
 from src.domain.puertos import PuertoBloqueos, PuertoTurnos
+
+logger = logging.getLogger(__name__)
 
 # Lista blanca de transiciones válidas: (estado_actual, acción) → estado_destino.
 _TRANSICIONES: dict[tuple[str, str], str] = {
@@ -40,9 +44,11 @@ class ServicioTurnos:
         self,
         repositorio: PuertoTurnos,
         puerto_bloqueos: PuertoBloqueos | None = None,
+        servicio_notificaciones: NotificacionesService | None = None,
     ) -> None:
         self._repositorio: PuertoTurnos = repositorio
         self._puerto_bloqueos: PuertoBloqueos | None = puerto_bloqueos
+        self._servicio_notificaciones: NotificacionesService | None = servicio_notificaciones
 
     def agendar_turno(
         self,
@@ -52,6 +58,7 @@ class ServicioTurnos:
         hora_fin: str,
         profesional: Profesional,
         sillon: Sillon,
+        telefono_paciente: str | None = None,
     ) -> Turno:
         """Crea y registra un turno si no hay solapamiento ni bloqueos de sillón."""
         sillon_id = sillon.id
@@ -111,7 +118,22 @@ class ServicioTurnos:
             hora_fin=hora_fin,
             paciente=paciente,
         )
-        return self._repositorio.guardar(turno)
+        guardado = self._repositorio.guardar(turno)
+
+        if self._servicio_notificaciones is not None:
+            try:
+                self._servicio_notificaciones.notificar_alta(
+                    paciente=paciente,
+                    telefono=telefono_paciente,
+                    profesional=profesional.nombre,
+                    fecha=fecha,
+                    hora_inicio=hora_inicio,
+                    turno_id=guardado.id,
+                )
+            except Exception as err:
+                logger.error("Error no bloqueante al notificar alta por WhatsApp: %s", err, exc_info=True)
+
+        return guardado
 
     def reprogramar(
         self,

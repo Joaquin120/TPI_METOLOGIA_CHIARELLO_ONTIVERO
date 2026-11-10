@@ -23,10 +23,12 @@ from src.api.routers import (
     pacientes,
     recursos,
     turnos,
+    webhooks,
 )
 from src.infrastructure.config import ruta_base_de_datos
 from src.infrastructure.database import abrir_conexion, migrar
 from src.infrastructure.seed import sembrar_datos_iniciales
+from src.infrastructure.whatsapp import WhatsAppSimuladoAdapter
 
 PREFIJO_API = "/api/v1"
 
@@ -67,6 +69,7 @@ def create_app(
     app = FastAPI(title="Turnos Odontología API", version="0.1.0")
     app.state.ruta_db = ruta_resuelta
     app.state.tenant_por_defecto = tenant_resuelto
+    app.state.proveedor_whatsapp = WhatsAppSimuladoAdapter()
 
     registrar_manejadores_de_errores(app)
     app.include_router(health.router, prefix=PREFIJO_API)
@@ -77,5 +80,6 @@ def create_app(
     app.include_router(metricas.router, prefix=PREFIJO_API)
     app.include_router(auditoria.router, prefix=PREFIJO_API)
     app.include_router(bloqueos.router, prefix=PREFIJO_API)
+    app.include_router(webhooks.router, prefix=PREFIJO_API)
 
     return app

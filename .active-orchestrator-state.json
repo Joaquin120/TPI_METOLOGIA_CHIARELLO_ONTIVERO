@@ -116,15 +116,15 @@
     "status": "missing"
   },
   "active_change": {
-    "name": "c-13-agenda-matricial",
-    "roadmap_id": "C-13",
-    "roadmap_slug": "agenda-matricial",
-    "path": "openspec/changes/archive/2026-11-10-c-13-agenda-matricial",
+    "name": "c-14-notificaciones-whatsapp",
+    "roadmap_id": "C-14",
+    "roadmap_slug": "notificaciones-whatsapp",
+    "path": "openspec/changes/archive/2026-11-10-c-14-notificaciones-whatsapp",
     "schema": "spec-driven",
     "phase": "archive",
     "status": "archived",
-    "tests": "65 frontend tests passed (Vitest), build OK (Vite+TS)",
-    "next_action": "/opsx:propose C-14 notificaciones-whatsapp",
+    "tests": "322 backend tests passed (pytest), 65 frontend tests passed (vitest)",
+    "next_action": "/opsx:propose c-15-lista-espera",
     "recorded_at": "2026-11-10"
   }
 }

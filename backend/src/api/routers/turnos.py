@@ -44,6 +44,7 @@ def _argumentos_de_dominio(datos: TurnoCrear) -> dict[str, object]:
         "hora_fin": datos.hora_fin,
         "profesional": Profesional(nombre=datos.profesional),
         "sillon": Sillon(nombre=datos.sillon),
+        "telefono_paciente": datos.telefono,
     }
 
 

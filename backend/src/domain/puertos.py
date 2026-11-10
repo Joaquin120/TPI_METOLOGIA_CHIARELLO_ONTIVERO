@@ -6,7 +6,7 @@ El dominio no importa `sqlite3` ni conoce SQL ni detalles de infraestructura.
 
 from typing import Protocol, runtime_checkable
 
-from src.domain.models import BloqueoSillon, Profesional, Sillon, Turno
+from src.domain.models import BloqueoSillon, MensajeWhatsApp, Profesional, ResultadoEnvio, Sillon, Turno
 
 
 @runtime_checkable
@@ -98,4 +98,14 @@ class PuertoBloqueos(Protocol):
     def eliminar(self, bloqueo_id: int) -> bool:
         """Elimina un bloqueo por su identificador. Retorna True si existía y fue eliminado."""
         ...
+
+
+@runtime_checkable
+class ProveedorWhatsApp(Protocol):
+    """Puerto para el despacho de mensajes a través de WhatsApp (C-14, DP-09)."""
+
+    def enviar_mensaje(self, mensaje: MensajeWhatsApp) -> ResultadoEnvio:
+        """Despacha un mensaje por WhatsApp devolviendo el resultado del envío."""
+        ...
+
 

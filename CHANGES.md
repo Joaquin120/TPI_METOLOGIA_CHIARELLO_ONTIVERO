@@ -438,7 +438,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ---
 
 ### [C-14] `notificaciones-whatsapp`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-10 en `openspec/changes/archive/2026-11-10-c-14-notificaciones-whatsapp/` (specs en `openspec/specs/notificaciones-whatsapp/spec.md`)
 - **Scope**: Recordatorios y confirmación/cancelación por WhatsApp (`F-07`)
   - Resolver `DP-09` (proveedor) y `PA-11` (momentos de envío, plantillas, opt-in) en el proposal
   - Módulo `Notificaciones`: eventos internos de dominio (alta, confirmación, proximidad) → cola/worker de envío

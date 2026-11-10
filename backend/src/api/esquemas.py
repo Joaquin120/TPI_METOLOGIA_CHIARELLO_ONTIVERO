@@ -39,6 +39,7 @@ class TurnoCrear(BaseModel):
     fecha: Annotated[TextoRequerido, Field(pattern=PATRON_FECHA)]
     hora_inicio: Annotated[TextoRequerido, Field(pattern=PATRON_HORA)]
     hora_fin: Annotated[TextoRequerido, Field(pattern=PATRON_HORA)]
+    telefono: str | None = None
 
 
 class TurnoRespuesta(BaseModel):
@@ -320,6 +321,7 @@ class BloqueoCrear(BaseModel):
     fecha: Annotated[TextoRequerido, Field(pattern=PATRON_FECHA)]
     hora_inicio: Annotated[TextoRequerido, Field(pattern=PATRON_HORA)]
     hora_fin: Annotated[TextoRequerido, Field(pattern=PATRON_HORA)]
+    telefono: str | None = None
     motivo: TextoRequerido
 
     @model_validator(mode="after")
@@ -355,6 +357,27 @@ class BloqueoRespuesta(BaseModel):
             creado_por=bloqueo.creado_por,
             creado_en=bloqueo.creado_en,
         )
+
+
+class WebhookWhatsAppPeticion(BaseModel):
+    """Cuerpo de solicitud recibido en el webhook de WhatsApp (C-14)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    accion: Literal["CONFIRMAR", "CANCELAR", "confirmar", "cancelar"]
+    turno_id: int
+    telefono: str | None = None
+    motivo: str | None = None
+
+
+class WebhookWhatsAppRespuesta(BaseModel):
+    """Respuesta devuelta tras procesar un evento de webhook de WhatsApp."""
+
+    mensaje: str
+    turno_id: int
+    estado_actual: str
+    accion_procesada: str
+
 
 
 

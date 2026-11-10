@@ -1,6 +1,6 @@
 """Modelos de dominio para la gestión de turnos odontológicos."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # Constantes de estado del turno (fuente de verdad de `Turno.estado`).
 # Se usan como texto plano — no un Enum — para preservar la igualdad literal
@@ -87,5 +87,35 @@ class BloqueoSillon:
     creado_por: int | None = None
     creado_en: str | None = None
     id: int | None = None
+
+
+class TipoMensajeWhatsApp:
+    """Tipos de mensajes gestionados por el subsistema de WhatsApp (C-14, F-07)."""
+
+    ALTA_TURNO = "ALTA_TURNO"
+    RECORDATORIO = "RECORDATORIO"
+    CONFIRMACION = "CONFIRMACION"
+    CANCELACION = "CANCELACION"
+
+
+@dataclass(frozen=True)
+class MensajeWhatsApp:
+    """Mensaje a ser despachado a través de WhatsApp."""
+
+    destinatario_telefono: str
+    contenido: str
+    tipo: str = TipoMensajeWhatsApp.ALTA_TURNO
+    turno_id: int | None = None
+    metadata: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ResultadoEnvio:
+    """Resultado devuelto por el proveedor de mensajería externa."""
+
+    exitoso: bool
+    mensaje_id: str | None = None
+    error: str | None = None
+
 
 
