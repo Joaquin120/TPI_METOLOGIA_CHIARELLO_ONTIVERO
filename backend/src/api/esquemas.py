@@ -8,9 +8,9 @@ la capa de presentación). No se valida `hora_inicio < hora_fin` (RP-01 abierta)
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
-from src.domain.models import Paciente, Profesional, Sillon, Turno
+from src.domain.models import BloqueoSillon, Paciente, Profesional, RegistroAuditoria, Sillon, Turno
 
 # `YYYY-MM-DD` (ISO-8601, fecha completa).
 PATRON_FECHA = r"^\d{4}-\d{2}-\d{2}$"
@@ -218,6 +218,147 @@ class MetricasRecursosRespuesta(BaseModel):
     sillones: list[MetricaSillonItem]
     fecha_desde: str | None = None
     fecha_hasta: str | None = None
+
+
+class RegistroAuditoriaRespuesta(BaseModel):
+    """Salida de cada ítem de `GET /api/v1/auditoria` (C-09)."""
+
+    id: int
+    tenant_id: int
+    usuario_id: int
+    accion: str
+    entidad: str
+    entidad_id: int | None = None
+    detalle: str | None = None
+    fecha_hora: str
+
+    @classmethod
+    def desde_dominio(
+        cls, registro: RegistroAuditoria
+    ) -> "RegistroAuditoriaRespuesta":
+        if registro.id is None:
+            raise ValueError("El registro de auditoría debe tener un id asignado")
+        return cls(
+            id=registro.id,
+            tenant_id=registro.tenant_id,
+            usuario_id=registro.usuario_id,
+            accion=registro.accion,
+            entidad=registro.entidad,
+            entidad_id=registro.entidad_id,
+            detalle=registro.detalle,
+            fecha_hora=registro.fecha_hora,
+        )
+
+
+class ReprogramarTurnoPeticion(BaseModel):
+    """Cuerpo de `PATCH /api/v1/turnos/{id}/reprogramar` (C-08b)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    fecha: Annotated[str, Field(pattern=PATRON_FECHA)]
+    hora_inicio: Annotated[str, Field(pattern=PATRON_HORA)]
+    hora_fin: Annotated[str, Field(pattern=PATRON_HORA)]
+    profesional_id: int | None = None
+    sillon_id: int | None = None
+    motivo: str | None = None
+
+    @model_validator(mode="after")
+    def validar_consistencia_horaria(self) -> "ReprogramarTurnoPeticion":
+        if self.hora_inicio >= self.hora_fin:
+            raise ValueError("hora_inicio debe ser anterior a hora_fin")
+        return self
+
+
+class ProfesionalCrear(BaseModel):
+    """Cuerpo de `POST /api/v1/profesionales` (C-09b)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    nombre: TextoRequerido
+    matricula: str | None = None
+    especialidad: str | None = None
+    activo: bool = True
+
+
+class ProfesionalActualizar(BaseModel):
+    """Cuerpo de `PUT /api/v1/profesionales/{id}` (C-09b)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    nombre: TextoRequerido
+    matricula: str | None = None
+    especialidad: str | None = None
+    activo: bool
+
+
+class SillonCrear(BaseModel):
+    """Cuerpo de `POST /api/v1/sillones` (C-09b)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    nombre: TextoRequerido
+    equipamiento: str | None = None
+    activo: bool = True
+
+
+class SillonActualizar(BaseModel):
+    """Cuerpo de `PUT /api/v1/sillones/{id}` (C-09b)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    nombre: TextoRequerido
+    equipamiento: str | None = None
+    activo: bool
+
+
+class BloqueoCrear(BaseModel):
+    """Cuerpo de `POST /api/v1/bloqueos` (C-10)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sillon_id: int
+    fecha: Annotated[TextoRequerido, Field(pattern=PATRON_FECHA)]
+    hora_inicio: Annotated[TextoRequerido, Field(pattern=PATRON_HORA)]
+    hora_fin: Annotated[TextoRequerido, Field(pattern=PATRON_HORA)]
+    motivo: TextoRequerido
+
+    @model_validator(mode="after")
+    def validar_consistencia_horaria(self) -> "BloqueoCrear":
+        if self.hora_inicio >= self.hora_fin:
+            raise ValueError("hora_inicio debe ser anterior a hora_fin")
+        return self
+
+
+class BloqueoRespuesta(BaseModel):
+    """Salida de `POST /api/v1/bloqueos` y de cada ítem de `GET /api/v1/bloqueos`."""
+
+    id: int
+    tenant_id: int
+    sillon_id: int
+    fecha_hora_inicio: str
+    fecha_hora_fin: str
+    motivo: str
+    creado_por: int | None = None
+    creado_en: str | None = None
+
+    @classmethod
+    def desde_dominio(cls, bloqueo: BloqueoSillon) -> "BloqueoRespuesta":
+        if bloqueo.id is None:
+            raise ValueError("El bloqueo debe tener un id asignado")
+        return cls(
+            id=bloqueo.id,
+            tenant_id=bloqueo.tenant_id,
+            sillon_id=bloqueo.sillon_id,
+            fecha_hora_inicio=bloqueo.fecha_hora_inicio,
+            fecha_hora_fin=bloqueo.fecha_hora_fin,
+            motivo=bloqueo.motivo,
+            creado_por=bloqueo.creado_por,
+            creado_en=bloqueo.creado_en,
+        )
+
+
+
+
 
 
 

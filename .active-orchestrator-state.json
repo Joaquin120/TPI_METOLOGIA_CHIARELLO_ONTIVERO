@@ -114,15 +114,15 @@
     "status": "missing"
   },
   "active_change": {
-    "name": "c-07-gestion-pacientes",
-    "roadmap_id": "C-07",
-    "roadmap_slug": "gestion-pacientes",
-    "path": "openspec/changes/archive/2026-11-09-c-07-gestion-pacientes",
+    "name": "c-11-frontend-shell",
+    "roadmap_id": "C-11",
+    "roadmap_slug": "frontend-shell",
+    "path": "openspec/changes/archive/2026-11-10-c-11-frontend-shell",
     "schema": "spec-driven",
     "phase": "archive",
     "status": "archived",
-    "tests": "189 passed, cov 100% on pacientes",
-    "next_action": "/opsx:propose c-08-reprogramacion-turno",
-    "recorded_at": "2026-11-09"
+    "tests": "20 frontend tests passed (Vitest), build OK (Vite+TS), 303 backend tests passed (pytest 97% cov)",
+    "next_action": "/opsx:propose C-12 agenda-turnos-ui",
+    "recorded_at": "2026-11-10"
   }
 }

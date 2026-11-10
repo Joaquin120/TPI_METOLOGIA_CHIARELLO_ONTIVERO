@@ -261,7 +261,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ---
 
 ### [C-07] `gestion-pacientes`
-- **Estado**: `[x]` completado (2026-11-09)
+- **Estado**: `[x]` completado — archivado en `openspec/changes/archive/2026-11-09-c-07-gestion-pacientes/` (specs en `openspec/specs/gestionar-pacientes/spec.md`)
 - **Scope**: Alta y consulta de pacientes (`F-11`)
   - Definir contrato (figura como "pendiente de definición" en `features.md` §5): `POST /api/v1/pacientes`, `GET /api/v1/pacientes` con filtro `dni` o `nombre`
   - Campos: `dni`, `nombre`, `telefono`, `tenant_id` (`data-models.md` §2.4); validación de datos mínimos
@@ -277,15 +277,46 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 
 ---
 
-## FASE 3 — Operación de la agenda
+## FASE 3 — Operación y Analítica de la Agenda
 
-### [C-08] `reprogramacion-turno`
-- **Estado**: `[ ]` pendiente
-- **Scope**: Reprogramar un turno existente (`F-09`)
-  - Resolver en el proposal `RP-03`: cancelación + alta, o modificación in-place del turno
-  - Endpoint de reprogramación (contrato por definir: `PATCH /api/v1/turnos/{id}` o equivalente)
-  - Validar el nuevo intervalo con el doble candado (`RN-01`, `RN-02`); liberar el horario anterior; conservar trazabilidad del cambio
-  - Tests: nuevo horario sin solapamiento, liberación del horario anterior, conflicto en el destino rechazado, trazo del cambio
+### [C-08] `reportes-metricas`
+- **Estado**: `[x]` completado — archivado 2026-11-09 en `openspec/changes/archive/2026-11-09-c-08-reportes-metricas/` (specs en `openspec/specs/reportes-metricas/spec.md`)
+- **Scope**: Consulta analítica de indicadores operativos y métricas de turnos y recursos clínicos (ocupación, estados y tasas de cancelación) acotada al tenant autenticado, con RBAC y envelope uniforme.
+  - Endpoints: `GET /api/v1/metricas/turnos` y `GET /api/v1/metricas/recursos`
+  - Métricas: total de turnos, conteo por estado, cálculo seguro de tasa de cancelación (0.0% cuando total=0)
+  - Desglose por recurso (profesionales y sillones) mediante LEFT JOIN preservando recursos sin asignaciones
+  - Filtrado opcional por rango de fechas (`fecha_desde`, `fecha_hasta`) y validación de rango (422 `RANGO_FECHAS_INVALIDO`)
+  - RBAC: permitido para `Administrador` y `Recepcionista`; denegado para `Profesional` (403 `ACCESO_DENEGADO`); sin token (401 `NO_AUTENTICADO`)
+  - Tests: suite de 201 tests passing con 98% de cobertura general y 100% en routers y repositorios de métricas
+- **Auditoría de Trazabilidad OpenSpec (SDD)**:
+  - Validado formalmente con la skill `.atl/skills/validador-trazabilidad-openspec.md`:
+    1. *Fidelidad normativa*: 10 escenarios de spec verificados con pytest (200, 401, 403, 422) con envelope estándar.
+    2. *Pureza de dominio*: 0 dependencias externas en `src/domain/` (guard tests 5/5 passing).
+    3. *Seguridad y aislamiento*: `tenant_id` derivado forzosamente desde JWT (`ContextoUsuario`), aislamiento inter-tenant demostrado en SQLite real.
+    4. *Sincronización de artefactos*: `tasks.md` (9/9 all_done), roadmap `CHANGES.md` y `.active-orchestrator-state.json`.
+  - *Dictamen*: **APROBADO**.
+- **Herramientas MCP utilizadas en este change**:
+  - Servidor **`engram`**:
+    - `mem_save`: Registro del hito de implementación técnica (`opsx/c-08-reportes-metricas/apply`).
+    - `mem_search`: Verificación de la persistencia de la observación en memoria semántica.
+- **Dependencias**: `C-04`, `C-05`, `C-06`
+- **Governance**: BAJO
+- **Leer antes**:
+  - `knowledge-base/features.md`
+  - `knowledge-base/data-models.md`
+  - `knowledge-base/business-rules.md` §RN-05, §RN-06
+
+---
+
+### [C-08b] `reprogramacion-turno`
+- **Estado**: `[x]` completado — archivado 2026-11-09 en `openspec/changes/archive/2026-11-09-c-08b-reprogramacion-turno/` (specs en `openspec/specs/reprogramar-turno/spec.md`)
+- **Scope completado**: Reprogramación in-place de turnos existentes preservando su identificador, paciente y estado activo (`F-09`, resolución de `RP-03`).
+  - Dominio: método `reprogramar` en `ServicioTurnos` con validación de estados terminales (`TransicionInvalidaError` ante `CANCELADO`/`COMPLETADO`), doble validación simultánea e independiente con precedencia `RN-09` (`SolapamientoProfesionalError` prioritario), y soporte para desplazamientos parciales en la misma franja sin auto-solapamiento (`excluir_turno_id`).
+  - Persistencia: `PuertoTurnos` y `RepositorioTurnosSqlite` con soporte para `excluir_turno_id` en `buscar_activos_solapables` y método `actualizar_reprogramacion` atómico en SQLite.
+  - API REST: endpoint `PATCH /api/v1/turnos/{id}/reprogramar` con esquema Pydantic `ReprogramarTurnoPeticion` y validación cronológica (`hora_inicio < hora_fin`).
+  - RBAC: restringido a `Recepcionista` y `Administrador`; `Profesional` recibe 403 `ACCESO_DENEGADO`. Aislamiento multi-tenant con 404 ante turnos de otro tenant.
+  - Auditoría: registro inmutable del evento `REPROGRAMAR_TURNO` en la bitácora de auditoría (C-09) con detalle de estado previo y nuevo intervalo asignado.
+  - Tests: suite de 243 tests pasando al 100% con 98% de cobertura general y 100% en el paquete de dominio (`src/domain/`).
 - **Dependencias**: `C-05`
 - **Governance**: MEDIO
 - **Leer antes**:
@@ -296,14 +327,33 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 
 ---
 
-### [C-09] `admin-recursos-crud`
-- **Estado**: `[ ]` pendiente
-- **Scope**: Administración de recursos por el Administrador (`F-10`, endpoints que figuran pendientes)
-  - `POST /api/v1/profesionales`, `PUT /api/v1/profesionales/{id}` — alta/edición con `matricula`, `especialidad`, `activo`
-  - `POST /api/v1/sillones`, `PUT /api/v1/sillones/{id}` — alta/edición con `equipamiento`, `activo`
-  - RBAC: solo `Administrador` (matriz de permisos); un recurso creado queda disponible para asignar turnos
-  - Sin modelo de horarios aún (`DP-08` sigue abierto — no resolver aquí)
-  - Tests: alta → recurso utilizable en un turno, permisos por rol, aislamiento por tenant
+### [C-09] `auditoria-trazabilidad`
+- **Estado**: `[x]` completado — archivado 2026-11-09 en `openspec/changes/archive/2026-11-09-c-09-auditoria-trazabilidad/` (specs en `openspec/specs/auditoria-trazabilidad/spec.md`)
+- **Scope**: Bitácora inmutable de eventos clínicos y administrativos (acciones sobre turnos, pacientes, recursos y accesos) acotada por tenant y restringida a administradores.
+  - Migración 005: tabla `auditoria` con FKs a `tenant` y `usuario`, índices `idx_auditoria_tenant_fecha` e `idx_auditoria_tenant_entidad`
+  - Modelo de dominio puro: `RegistroAuditoria` en `src/domain/models.py` (0 dependencias externas)
+  - Persistencia: `RepositorioAuditoriaSqlite` con métodos `registrar` y `listar` acotados incondicionalmente a `tenant_id`
+  - Endpoint: `GET /api/v1/auditoria` con filtrado por `fecha_desde`, `fecha_hasta`, `usuario_id`, `accion` y `entidad`
+  - RBAC: exclusivo para `Administrador` (403 `ACCESO_DENEGADO`); sin token (401 `NO_AUTENTICADO`)
+  - Tests: suite de 211 tests passing en SQLite real con 98% de cobertura general y 100% en routers y repositorios de auditoría
+- **Dependencias**: `C-04`, `C-05`, `C-07`
+- **Governance**: BAJO
+- **Leer antes**:
+  - `knowledge-base/architecture.md`
+  - `knowledge-base/actors.md`
+  - `knowledge-base/business-rules.md` §RN-05, §RN-06
+
+---
+
+### [C-09b] `admin-recursos-crud`
+- **Estado**: `[x]` completado — archivado 2026-11-10 en `openspec/changes/archive/2026-11-10-c-09b-admin-recursos-crud/` (specs en `openspec/specs/administrar-recursos/spec.md`)
+- **Scope completado**: Administración de recursos por el Administrador (`F-10`).
+  - Dominio: excepción `RecursoDuplicadoError` en `src/domain/exceptions.py`.
+  - Persistencia: métodos `crear` y `actualizar` en `RepositorioProfesionales` y `RepositorioSillones` con validación de unicidad por tenant y aislamiento multi-tenant.
+  - API REST: endpoints `POST /api/v1/profesionales`, `PUT /api/v1/profesionales/{id}`, `POST /api/v1/sillones` y `PUT /api/v1/sillones/{id}` con esquemas Pydantic `ProfesionalCrear`, `ProfesionalActualizar`, `SillonCrear` y `SillonActualizar`.
+  - RBAC: exclusivo para el rol `Administrador` (`403 ACCESO_DENEGADO` para otros roles; `401 NO_AUTENTICADO` sin credenciales; `404` ante recursos inexistentes o ajenos al tenant).
+  - Auditoría: registro inmutable de eventos (`CREAR_PROFESIONAL`, `MODIFICAR_PROFESIONAL`, `CREAR_SILLON`, `MODIFICAR_SILLON`) en `auditoria` (C-09).
+  - Tests: suite de 273 tests pasando al 100% con 98% de cobertura general y 100% en el paquete de dominio (`src/domain/`).
 - **Dependencias**: `C-06`
 - **Governance**: BAJO
 - **Leer antes**:
@@ -315,12 +365,14 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ---
 
 ### [C-10] `bloqueo-sillon`
-- **Estado**: `[ ]` pendiente
-- **Scope**: Bloqueo de sillón por mantenimiento (`F-12`, `RN-07`)
-  - Resolver en el proposal `PA-15` / `PA-16` / `RP-07`: turno de bloqueo vs. inactivación del recurso
-  - Implementar el mecanismo elegido: si es turno de bloqueo, participa en la validación de solapamiento junto a los turnos activos
-  - Endpoint de autorización del bloqueo (Administrador), alta/edición de `activo` en sillones
-  - Tests: sillón bloqueado no recibe turnos en el intervalo, turnos existentes según `RP-07`, inactivación impide nuevas reservas, integración con doble candado
+- **Estado**: `[x]` completado — archivado 2026-11-10 en `openspec/changes/archive/2026-11-10-c-10-bloqueo-sillon/` (specs en `openspec/specs/bloquear-sillon/spec.md`)
+- **Scope completado**: Bloqueo de sillón por mantenimiento (`F-12`, `RN-07`, `RP-07`, `PA-15`).
+  - Resoluciones normativas: `PA-15` resuelta modelando `BloqueoSillon` como entidad independiente desacoplada de `Turno` para no viciar la semántica médica de pacientes ni métricas de atención asistencial; `RP-07` resuelta impidiendo el registro de bloqueos si existen turnos activos (`PENDIENTE`/`CONFIRMADO`) en el intervalo semiabierto solapado (`ConflictoTurnosExistentesError` / HTTP 409 `CONFLICTO_TURNOS_EXISTENTES`).
+  - Dominio puro: modelo `BloqueoSillon`, excepciones `SillonBloqueadoError`, `ConflictoTurnosExistentesError`, `BloqueoSolapadoError`, `BloqueoNoEncontradoError`, puerto `PuertoBloqueos` y métodos en `ServicioTurnos` (`agendar_turno`, `reprogramar`, `crear_bloqueo`, `listar_bloqueos`, `eliminar_bloqueo`).
+  - Persistencia: migración `006_bloqueos.sql` con tabla `bloqueo_sillon` e índices por tenant e intervalo; repositorio `RepositorioBloqueosSqlite` con soporte de intervalos semiabiertos `[inicio, fin)` y aislamiento multi-tenant.
+  - API REST: router `backend/src/api/routers/bloqueos.py` con endpoints `POST /api/v1/bloqueos` (Admin), `GET /api/v1/bloqueos` (Admin/Recep) y `DELETE /api/v1/bloqueos/{id}` (Admin).
+  - Auditoría inmutable: eventos `CREAR_BLOQUEO_SILLON` y `ELIMINAR_BLOQUEO_SILLON` registrados en la bitácora inmutable (C-09).
+  - Tests: suite completa de 303 tests pasando al 100% con 97% de cobertura general y 100% en el paquete de dominio (`src/domain/`).
 - **Dependencias**: `C-09`
 - **Governance**: ALTO
 - **Leer antes**:
@@ -334,7 +386,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ## FASE 4 — Frontend web (MVP)
 
 ### [C-11] `frontend-shell`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-10 en `openspec/changes/archive/2026-11-10-c-11-frontend-shell/` (specs en `openspec/specs/cliente-web-shell/spec.md`)
 - **Scope**: Scaffolding del cliente web (producto web-first, `actors.md` §4)
   - Elegir stack frontend en el proposal (`DP-01`): SPA + cliente HTTP tipado contra `src/api`
   - Login + rutas protegidas por rol (consume `C-04`)
@@ -479,7 +531,7 @@ Orden de ejecución planificado (pendiente):
 | C-08 | reprogramacion-turno | 3 · Operación de la agenda | C-05 | MEDIO | `[ ]` |
 | C-09 | admin-recursos-crud | 3 · Operación de la agenda | C-06 | BAJO | `[ ]` |
 | C-10 | bloqueo-sillon | 3 · Operación de la agenda | C-09 | ALTO | `[ ]` |
-| C-11 | frontend-shell | 4 · Frontend web | C-05, C-06, C-07 | BAJO | `[ ]` |
+| C-11 | frontend-shell | 4 · Frontend web | C-05, C-06, C-07 | BAJO | `[x]` |
 | C-12 | agenda-turnos-ui | 4 · Frontend web | C-11 | MEDIO | `[ ]` |
 | C-13 | agenda-matricial | 5 · Segunda etapa | C-12 | MEDIO | `[ ]` |
 | C-14 | notificaciones-whatsapp | 5 · Segunda etapa | C-05 | ALTO | `[ ]` |

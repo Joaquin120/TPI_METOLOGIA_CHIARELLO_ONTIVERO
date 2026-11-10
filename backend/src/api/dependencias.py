@@ -26,6 +26,8 @@ from src.api.seguridad import (
 )
 from src.domain.services import ServicioTurnos
 from src.infrastructure.database import abrir_conexion
+from src.repositories.auditoria_sqlite import RepositorioAuditoriaSqlite
+from src.repositories.bloqueos_sqlite import RepositorioBloqueosSqlite
 from src.repositories.metricas_sqlite import RepositorioMetricasSqlite
 from src.repositories.pacientes_sqlite import RepositorioPacientesSqlite
 from src.repositories.recursos import (
@@ -146,8 +148,11 @@ def contexto_turnos(
         ).fetchone()
         if fila is None:
             raise ErrorTenantNoResuelto(f"El tenant {tenant_id} no existe")
+        repo_turnos = RepositorioTurnosSqlite(conexion, tenant_id=tenant_id)
+        repo_bloqueos = RepositorioBloqueosSqlite(conexion, tenant_id=tenant_id)
         servicio = ServicioTurnos(
-            RepositorioTurnosSqlite(conexion, tenant_id=tenant_id)
+            repositorio=repo_turnos,
+            puerto_bloqueos=repo_bloqueos,
         )
         yield ContextoTurnos(servicio=servicio, tenant_id=tenant_id)
     finally:
@@ -207,8 +212,36 @@ def obtener_repositorio_metricas(
         conexion.close()
 
 
+def obtener_repositorio_auditoria(
+    request: Request,
+) -> Iterator[RepositorioAuditoriaSqlite]:
+    """Dependencia de FastAPI: conexión por petición y repositorio de auditoría (C-09)."""
+    conexion = abrir_conexion(request.app.state.ruta_db)
+    try:
+        yield RepositorioAuditoriaSqlite(conexion)
+    finally:
+        conexion.close()
+
+
+def obtener_repositorio_bloqueos(
+    request: Request,
+    usuario: ContextoUsuario = Depends(obtener_usuario_actual),
+) -> Iterator[RepositorioBloqueosSqlite]:
+    """Dependencia de FastAPI: conexión por petición y repositorio de bloqueos (C-10)."""
+    conexion = abrir_conexion(request.app.state.ruta_db)
+    try:
+        tenant_id = usuario.tenant_id
+        yield RepositorioBloqueosSqlite(conexion, tenant_id=tenant_id)
+    finally:
+        conexion.close()
+
+
+get_repositorio_bloqueos = obtener_repositorio_bloqueos
 requerir_roles = requerir_rol
 get_repositorio_metricas = obtener_repositorio_metricas
+get_repositorio_auditoria = obtener_repositorio_auditoria
+
+
 
 
 

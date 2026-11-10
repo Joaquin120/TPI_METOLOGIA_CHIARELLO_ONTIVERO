@@ -2,6 +2,7 @@
 
 import sqlite3
 
+from src.domain.exceptions import RecursoDuplicadoError
 from src.domain.models import Profesional, Sillon
 
 
@@ -59,6 +60,82 @@ class RepositorioProfesionales:
             for fila in filas
         ]
 
+    def crear(
+        self,
+        nombre: str,
+        matricula: str | None = None,
+        especialidad: str | None = None,
+        activo: bool = True,
+    ) -> Profesional:
+        """Crea un nuevo profesional acotado al tenant. Lanza RecursoDuplicadoError si ya existe."""
+        try:
+            cursor = self._conexion.execute(
+                """
+                INSERT INTO profesional (tenant_id, nombre, matricula, especialidad, activo)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (self._tenant_id, nombre, matricula, especialidad, int(activo)),
+            )
+            self._conexion.commit()
+            return Profesional(
+                id=cursor.lastrowid,
+                nombre=nombre,
+                matricula=matricula,
+                especialidad=especialidad,
+                activo=activo,
+            )
+        except sqlite3.IntegrityError as exc:
+            raise RecursoDuplicadoError(
+                f"Ya existe un profesional con el nombre '{nombre}' en esta clínica"
+            ) from exc
+
+    def actualizar(
+        self,
+        id_: int,
+        nombre: str,
+        matricula: str | None = None,
+        especialidad: str | None = None,
+        activo: bool = True,
+    ) -> Profesional | None:
+        """Actualiza un profesional existente en el tenant.
+
+        Retorna None si no existe o RecursoDuplicadoError si el nombre colisiona con otro profesional.
+        """
+        existente = self.obtener_por_id(id_)
+        if existente is None:
+            return None
+
+        colision = self._conexion.execute(
+            "SELECT 1 FROM profesional WHERE tenant_id = ? AND nombre = ? AND id != ?",
+            (self._tenant_id, nombre, id_),
+        ).fetchone()
+        if colision is not None:
+            raise RecursoDuplicadoError(
+                f"Ya existe un profesional con el nombre '{nombre}' en esta clínica"
+            )
+
+        try:
+            self._conexion.execute(
+                """
+                UPDATE profesional
+                   SET nombre = ?, matricula = ?, especialidad = ?, activo = ?
+                 WHERE id = ? AND tenant_id = ?
+                """,
+                (nombre, matricula, especialidad, int(activo), id_, self._tenant_id),
+            )
+            self._conexion.commit()
+            return Profesional(
+                id=id_,
+                nombre=nombre,
+                matricula=matricula,
+                especialidad=especialidad,
+                activo=activo,
+            )
+        except sqlite3.IntegrityError as exc:
+            raise RecursoDuplicadoError(
+                f"Ya existe un profesional con el nombre '{nombre}' en esta clínica"
+            ) from exc
+
 
 class RepositorioSillones:
     """Acceso a datos de sillones dentro de un tenant."""
@@ -111,6 +188,78 @@ class RepositorioSillones:
             )
             for fila in filas
         ]
+
+    def crear(
+        self,
+        nombre: str,
+        equipamiento: str | None = None,
+        activo: bool = True,
+    ) -> Sillon:
+        """Crea un nuevo sillón acotado al tenant. Lanza RecursoDuplicadoError si ya existe."""
+        try:
+            cursor = self._conexion.execute(
+                """
+                INSERT INTO sillon (tenant_id, nombre, equipamiento, activo)
+                VALUES (?, ?, ?, ?)
+                """,
+                (self._tenant_id, nombre, equipamiento, int(activo)),
+            )
+            self._conexion.commit()
+            return Sillon(
+                id=cursor.lastrowid,
+                nombre=nombre,
+                equipamiento=equipamiento,
+                activo=activo,
+            )
+        except sqlite3.IntegrityError as exc:
+            raise RecursoDuplicadoError(
+                f"Ya existe un sillón con el nombre '{nombre}' en esta clínica"
+            ) from exc
+
+    def actualizar(
+        self,
+        id_: int,
+        nombre: str,
+        equipamiento: str | None = None,
+        activo: bool = True,
+    ) -> Sillon | None:
+        """Actualiza un sillón existente en el tenant.
+
+        Retorna None si no existe o RecursoDuplicadoError si el nombre colisiona con otro sillón.
+        """
+        existente = self.obtener_por_id(id_)
+        if existente is None:
+            return None
+
+        colision = self._conexion.execute(
+            "SELECT 1 FROM sillon WHERE tenant_id = ? AND nombre = ? AND id != ?",
+            (self._tenant_id, nombre, id_),
+        ).fetchone()
+        if colision is not None:
+            raise RecursoDuplicadoError(
+                f"Ya existe un sillón con el nombre '{nombre}' en esta clínica"
+            )
+
+        try:
+            self._conexion.execute(
+                """
+                UPDATE sillon
+                   SET nombre = ?, equipamiento = ?, activo = ?
+                 WHERE id = ? AND tenant_id = ?
+                """,
+                (nombre, equipamiento, int(activo), id_, self._tenant_id),
+            )
+            self._conexion.commit()
+            return Sillon(
+                id=id_,
+                nombre=nombre,
+                equipamiento=equipamiento,
+                activo=activo,
+            )
+        except sqlite3.IntegrityError as exc:
+            raise RecursoDuplicadoError(
+                f"Ya existe un sillón con el nombre '{nombre}' en esta clínica"
+            ) from exc
 
 
 class RepositorioPacientes:

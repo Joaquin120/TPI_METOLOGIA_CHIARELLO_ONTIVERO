@@ -43,3 +43,8 @@ venv.bak/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+

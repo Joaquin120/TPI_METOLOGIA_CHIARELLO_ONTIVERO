@@ -12,11 +12,18 @@ from src.infrastructure.database import abrir_conexion, migrar
 
 
 def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
-    """Las migraciones 001 a 004 crean las tablas e índices, y son idempotentes."""
+    """Las migraciones 001 a 006 crean las tablas e índices, y son idempotentes."""
     ruta = tmp_path / "esquema.db"
     conexion = abrir_conexion(str(ruta))
     try:
-        assert migrar(conexion) == ["001_init.sql", "002_auth.sql", "003_recursos.sql", "004_pacientes.sql"]
+        assert migrar(conexion) == [
+            "001_init.sql",
+            "002_auth.sql",
+            "003_recursos.sql",
+            "004_pacientes.sql",
+            "005_auditoria.sql",
+            "006_bloqueos.sql",
+        ]
         # Segunda corrida: las migraciones ya registradas no se vuelven a aplicar.
         assert migrar(conexion) == []
 
@@ -26,13 +33,29 @@ def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
                 "SELECT name FROM sqlite_master WHERE type = 'table'"
             )
         }
-        assert {"tenant", "profesional", "sillon", "paciente", "turno", "usuario"} <= tablas
+        assert {
+            "tenant",
+            "profesional",
+            "sillon",
+            "paciente",
+            "turno",
+            "usuario",
+            "auditoria",
+            "bloqueo_sillon",
+        } <= tablas
         assert "schema_migrations" in tablas
 
         aplicadas = conexion.execute(
             "SELECT version FROM schema_migrations"
         ).fetchall()
-        assert [fila[0] for fila in aplicadas] == ["001_init.sql", "002_auth.sql", "003_recursos.sql", "004_pacientes.sql"]
+        assert [fila[0] for fila in aplicadas] == [
+            "001_init.sql",
+            "002_auth.sql",
+            "003_recursos.sql",
+            "004_pacientes.sql",
+            "005_auditoria.sql",
+            "006_bloqueos.sql",
+        ]
 
         # Índice de solapamiento (tenant_id, fecha_hora_inicio) — design D4.
         columnas_indice = [
@@ -60,6 +83,42 @@ def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
             )
         ]
         assert columnas_indice_paciente == ["tenant_id", "dni"]
+
+        # Índice de auditoría fecha (tenant_id, fecha_hora) — C-09.
+        columnas_indice_auditoria_fecha = [
+            fila[2]
+            for fila in conexion.execute(
+                "PRAGMA index_info(idx_auditoria_tenant_fecha)"
+            )
+        ]
+        assert columnas_indice_auditoria_fecha == ["tenant_id", "fecha_hora"]
+
+        # Índice de auditoría entidad (tenant_id, entidad, entidad_id) — C-09.
+        columnas_indice_auditoria_entidad = [
+            fila[2]
+            for fila in conexion.execute(
+                "PRAGMA index_info(idx_auditoria_tenant_entidad)"
+            )
+        ]
+        assert columnas_indice_auditoria_entidad == [
+            "tenant_id",
+            "entidad",
+            "entidad_id",
+        ]
+
+        # Índice de bloqueo sillón intervalo (tenant_id, sillon_id, fecha_hora_inicio, fecha_hora_fin) — C-10.
+        columnas_indice_bloqueo = [
+            fila[2]
+            for fila in conexion.execute(
+                "PRAGMA index_info(idx_bloqueo_sillon_tenant_intervalo)"
+            )
+        ]
+        assert columnas_indice_bloqueo == [
+            "tenant_id",
+            "sillon_id",
+            "fecha_hora_inicio",
+            "fecha_hora_fin",
+        ]
     finally:
         conexion.close()
 
@@ -248,5 +307,106 @@ def test_esquema_004_paciente_restricciones(tmp_path) -> None:
         conexion.commit()
     finally:
         conexion.close()
+
+
+def test_esquema_005_auditoria_restricciones(tmp_path) -> None:
+    """La tabla auditoria valida FKs a tenant y usuario (C-09)."""
+    ruta = tmp_path / "auditoria_integridad.db"
+    conexion = abrir_conexion(str(ruta))
+    try:
+        migrar(conexion)
+        conexion.execute("INSERT INTO tenant (nombre) VALUES ('Clínica Auditoria')")
+        id_tenant = conexion.execute("SELECT id FROM tenant WHERE nombre = 'Clínica Auditoria'").fetchone()[0]
+
+        conexion.execute(
+            "INSERT INTO usuario (tenant_id, email, password_hash, rol) VALUES (?, 'admin@auditoria.com', 'h', 'Administrador')",
+            (id_tenant,),
+        )
+        id_usuario = conexion.execute("SELECT id FROM usuario WHERE email = 'admin@auditoria.com'").fetchone()[0]
+
+        # Inserción válida
+        conexion.execute(
+            """
+            INSERT INTO auditoria (tenant_id, usuario_id, accion, entidad, entidad_id, detalle, fecha_hora)
+            VALUES (?, ?, 'CREAR', 'Turno', 1, 'Creación de turno', '2026-11-09 10:00')
+            """,
+            (id_tenant, id_usuario),
+        )
+        conexion.commit()
+
+        # FK usuario_id inexistente
+        with pytest.raises(sqlite3.IntegrityError):
+            conexion.execute(
+                """
+                INSERT INTO auditoria (tenant_id, usuario_id, accion, entidad, fecha_hora)
+                VALUES (?, 99999, 'CREAR', 'Turno', '2026-11-09 10:00')
+                """,
+                (id_tenant,),
+            )
+
+        # FK tenant_id inexistente
+        with pytest.raises(sqlite3.IntegrityError):
+            conexion.execute(
+                """
+                INSERT INTO auditoria (tenant_id, usuario_id, accion, entidad, fecha_hora)
+                VALUES (99999, ?, 'CREAR', 'Turno', '2026-11-09 10:00')
+                """,
+                (id_usuario,),
+            )
+    finally:
+        conexion.close()
+
+
+def test_esquema_006_bloqueos_restricciones(tmp_path) -> None:
+    """La tabla bloqueo_sillon valida FKs a tenant, sillon y usuario (C-10)."""
+    ruta = tmp_path / "bloqueos_integridad.db"
+    conexion = abrir_conexion(str(ruta))
+    try:
+        migrar(conexion)
+        conexion.execute("INSERT INTO tenant (nombre) VALUES ('Clínica Bloqueos')")
+        id_tenant = conexion.execute("SELECT id FROM tenant WHERE nombre = 'Clínica Bloqueos'").fetchone()[0]
+
+        conexion.execute("INSERT INTO sillon (tenant_id, nombre) VALUES (?, 'Sillón B1')", (id_tenant,))
+        id_sillon = conexion.execute("SELECT id FROM sillon WHERE nombre = 'Sillón B1'").fetchone()[0]
+
+        conexion.execute(
+            "INSERT INTO usuario (tenant_id, email, password_hash, rol) VALUES (?, 'admin@bloqueos.com', 'h', 'Administrador')",
+            (id_tenant,),
+        )
+        id_usuario = conexion.execute("SELECT id FROM usuario WHERE email = 'admin@bloqueos.com'").fetchone()[0]
+
+        # Inserción válida
+        conexion.execute(
+            """
+            INSERT INTO bloqueo_sillon (tenant_id, sillon_id, fecha_hora_inicio, fecha_hora_fin, motivo, creado_por)
+            VALUES (?, ?, '2026-11-20 08:00', '2026-11-20 12:00', 'Mantenimiento Preventivo', ?)
+            """,
+            (id_tenant, id_sillon, id_usuario),
+        )
+        conexion.commit()
+
+        # FK sillon_id inexistente
+        with pytest.raises(sqlite3.IntegrityError):
+            conexion.execute(
+                """
+                INSERT INTO bloqueo_sillon (tenant_id, sillon_id, fecha_hora_inicio, fecha_hora_fin, motivo)
+                VALUES (?, 99999, '2026-11-20 08:00', '2026-11-20 12:00', 'Mantenimiento')
+                """,
+                (id_tenant,),
+            )
+
+        # FK tenant_id inexistente
+        with pytest.raises(sqlite3.IntegrityError):
+            conexion.execute(
+                """
+                INSERT INTO bloqueo_sillon (tenant_id, sillon_id, fecha_hora_inicio, fecha_hora_fin, motivo)
+                VALUES (99999, ?, '2026-11-20 08:00', '2026-11-20 12:00', 'Mantenimiento')
+                """,
+                (id_sillon,),
+            )
+    finally:
+        conexion.close()
+
+
 
 

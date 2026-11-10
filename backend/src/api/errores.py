@@ -14,6 +14,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from src.domain.exceptions import (
+    BloqueoNoEncontradoError,
+    BloqueoSolapadoError,
+    ConflictoTurnosExistentesError,
+    SillonBloqueadoError,
     SolapamientoProfesionalError,
     SolapamientoSillonError,
     TransicionInvalidaError,
@@ -89,6 +93,48 @@ class ErrorRangoFechasInvalido(Exception):
         mensaje: str = "La fecha desde no puede ser posterior a la fecha hasta",
     ) -> None:
         super().__init__(mensaje)
+
+
+class ErrorProfesionalNoEncontrado(Exception):
+    """El profesional solicitado no existe en el tenant resuelto."""
+
+    def __init__(self, mensaje: str = "Profesional no encontrado") -> None:
+        super().__init__(mensaje)
+
+
+class ErrorSillonNoEncontrado(Exception):
+    """El sillón solicitado no existe en el tenant resuelto."""
+
+    def __init__(self, mensaje: str = "Sillón no encontrado") -> None:
+        super().__init__(mensaje)
+
+
+class ErrorNombreProfesionalDuplicado(Exception):
+    """Ya existe un profesional con el mismo nombre en el tenant."""
+
+    def __init__(
+        self,
+        mensaje: str = "Ya existe un profesional con ese nombre en este centro",
+    ) -> None:
+        super().__init__(mensaje)
+
+
+class ErrorNombreSillonDuplicado(Exception):
+    """Ya existe un sillón con el mismo nombre en el tenant."""
+
+    def __init__(
+        self,
+        mensaje: str = "Ya existe un sillón con ese nombre en este centro",
+    ) -> None:
+        super().__init__(mensaje)
+
+
+class ErrorBloqueoNoEncontrado(Exception):
+    """El bloqueo solicitado no existe en el tenant resuelto."""
+
+    def __init__(self, mensaje: str = "Bloqueo no encontrado") -> None:
+        super().__init__(mensaje)
+
 
 
 def respuesta_error(status_code: int, code: str, message: str) -> JSONResponse:
@@ -184,6 +230,54 @@ def _manejar_rango_fechas_invalido(
     return respuesta_error(422, "RANGO_FECHAS_INVALIDO", str(exc))
 
 
+def _manejar_profesional_no_encontrado(
+    _request: Request, exc: ErrorProfesionalNoEncontrado
+) -> JSONResponse:
+    return respuesta_error(404, "PROFESIONAL_NO_ENCONTRADO", str(exc))
+
+
+def _manejar_sillon_no_encontrado(
+    _request: Request, exc: ErrorSillonNoEncontrado
+) -> JSONResponse:
+    return respuesta_error(404, "SILLON_NO_ENCONTRADO", str(exc))
+
+
+def _manejar_nombre_profesional_duplicado(
+    _request: Request, exc: ErrorNombreProfesionalDuplicado
+) -> JSONResponse:
+    return respuesta_error(409, "NOMBRE_PROFESIONAL_DUPLICADO", str(exc))
+
+
+def _manejar_nombre_sillon_duplicado(
+    _request: Request, exc: ErrorNombreSillonDuplicado
+) -> JSONResponse:
+    return respuesta_error(409, "NOMBRE_SILLON_DUPLICADO", str(exc))
+
+
+def _manejar_sillon_bloqueado(
+    _request: Request, exc: SillonBloqueadoError
+) -> JSONResponse:
+    return respuesta_error(409, "SILLON_BLOQUEADO", str(exc))
+
+
+def _manejar_conflicto_turnos_existentes(
+    _request: Request, exc: ConflictoTurnosExistentesError
+) -> JSONResponse:
+    return respuesta_error(409, "CONFLICTO_TURNOS_EXISTENTES", str(exc))
+
+
+def _manejar_bloqueo_solapado(
+    _request: Request, exc: BloqueoSolapadoError
+) -> JSONResponse:
+    return respuesta_error(409, "BLOQUEO_SOLAPADO", str(exc))
+
+
+def _manejar_bloqueo_no_encontrado(
+    _request: Request, exc: BloqueoNoEncontradoError | ErrorBloqueoNoEncontrado
+) -> JSONResponse:
+    return respuesta_error(404, "BLOQUEO_NO_ENCONTRADO", str(exc))
+
+
 def registrar_manejadores_de_errores(app: FastAPI) -> None:
     """Registra en `app` los handlers del envelope (reutilizable por la factoría)."""
     app.add_exception_handler(
@@ -201,3 +295,31 @@ def registrar_manejadores_de_errores(app: FastAPI) -> None:
     app.add_exception_handler(ErrorTurnoNoEncontrado, _manejar_turno_no_encontrado)
     app.add_exception_handler(ErrorPacienteDuplicado, _manejar_paciente_duplicado)
     app.add_exception_handler(ErrorRangoFechasInvalido, _manejar_rango_fechas_invalido)
+    app.add_exception_handler(
+        ErrorProfesionalNoEncontrado, _manejar_profesional_no_encontrado
+    )
+    app.add_exception_handler(
+        ErrorSillonNoEncontrado, _manejar_sillon_no_encontrado
+    )
+    app.add_exception_handler(
+        ErrorNombreProfesionalDuplicado, _manejar_nombre_profesional_duplicado
+    )
+    app.add_exception_handler(
+        ErrorNombreSillonDuplicado, _manejar_nombre_sillon_duplicado
+    )
+    app.add_exception_handler(
+        SillonBloqueadoError, _manejar_sillon_bloqueado
+    )
+    app.add_exception_handler(
+        ConflictoTurnosExistentesError, _manejar_conflicto_turnos_existentes
+    )
+    app.add_exception_handler(
+        BloqueoSolapadoError, _manejar_bloqueo_solapado
+    )
+    app.add_exception_handler(
+        BloqueoNoEncontradoError, _manejar_bloqueo_no_encontrado
+    )
+    app.add_exception_handler(
+        ErrorBloqueoNoEncontrado, _manejar_bloqueo_no_encontrado
+    )
+

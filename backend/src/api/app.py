@@ -14,7 +14,16 @@ import os
 from fastapi import FastAPI
 
 from src.api.errores import registrar_manejadores_de_errores
-from src.api.routers import auth, health, metricas, pacientes, recursos, turnos
+from src.api.routers import (
+    auditoria,
+    auth,
+    bloqueos,
+    health,
+    metricas,
+    pacientes,
+    recursos,
+    turnos,
+)
 from src.infrastructure.config import ruta_base_de_datos
 from src.infrastructure.database import abrir_conexion, migrar
 from src.infrastructure.seed import sembrar_datos_iniciales
@@ -66,5 +75,7 @@ def create_app(
     app.include_router(recursos.router, prefix=PREFIJO_API)
     app.include_router(pacientes.router, prefix=PREFIJO_API)
     app.include_router(metricas.router, prefix=PREFIJO_API)
+    app.include_router(auditoria.router, prefix=PREFIJO_API)
+    app.include_router(bloqueos.router, prefix=PREFIJO_API)
 
     return app

@@ -59,3 +59,33 @@ class Turno:
     paciente: str
     estado: str = CONFIRMADO
     id: int | None = None
+
+
+@dataclass(frozen=True)
+class RegistroAuditoria:
+    """Entidad de dominio que representa un evento de auditoría del sistema (C-09)."""
+
+    tenant_id: int
+    usuario_id: int
+    accion: str
+    entidad: str
+    fecha_hora: str
+    entidad_id: int | None = None
+    detalle: str | None = None
+    id: int | None = None
+
+
+@dataclass(frozen=True)
+class BloqueoSillon:
+    """Entidad de dominio que representa un bloqueo temporal de un sillón/box (C-10, F-12, RN-07)."""
+
+    tenant_id: int
+    sillon_id: int
+    fecha_hora_inicio: str  # formato 'YYYY-MM-DD HH:MM'
+    fecha_hora_fin: str     # formato 'YYYY-MM-DD HH:MM'
+    motivo: str
+    creado_por: int | None = None
+    creado_en: str | None = None
+    id: int | None = None
+
+

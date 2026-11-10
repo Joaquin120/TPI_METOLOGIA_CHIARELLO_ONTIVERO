@@ -6,7 +6,7 @@ El dominio no importa `sqlite3` ni conoce SQL ni detalles de infraestructura.
 
 from typing import Protocol, runtime_checkable
 
-from src.domain.models import Profesional, Sillon, Turno
+from src.domain.models import BloqueoSillon, Profesional, Sillon, Turno
 
 
 @runtime_checkable
@@ -19,6 +19,10 @@ class PuertoTurnos(Protocol):
 
     def actualizar(self, turno: Turno) -> Turno:
         """Actualiza el estado de un turno persistido existente."""
+        ...
+
+    def actualizar_reprogramacion(self, turno: Turno) -> Turno:
+        """Actualiza fecha, horario y recursos de un turno existente."""
         ...
 
     def obtener_por_id(self, turno_id: int) -> Turno | None:
@@ -45,6 +49,53 @@ class PuertoTurnos(Protocol):
         hora_fin: str,
         profesional: Profesional,
         sillon: Sillon,
+        excluir_turno_id: int | None = None,
     ) -> list[Turno]:
         """Devuelve turnos activos que solapan temporalmente con el intervalo dado."""
         ...
+
+    def buscar_activos_por_sillon(
+        self,
+        sillon_id: int,
+        fecha_hora_inicio: str,
+        fecha_hora_fin: str,
+    ) -> list[Turno]:
+        """Devuelve turnos activos asignados al sillón en el intervalo dado (RP-07)."""
+        ...
+
+
+@runtime_checkable
+class PuertoBloqueos(Protocol):
+    """Puerto de persistencia para la gestión de bloqueos de sillones."""
+
+    def guardar(self, bloqueo: BloqueoSillon) -> BloqueoSillon:
+        """Persiste un nuevo bloqueo y devuelve la entidad con su identificador."""
+        ...
+
+    def buscar_bloqueos_solapados(
+        self,
+        sillon_id: int,
+        fecha_hora_inicio: str,
+        fecha_hora_fin: str,
+        excluir_bloqueo_id: int | None = None,
+    ) -> list[BloqueoSillon]:
+        """Devuelve bloqueos del sillón que solapan temporalmente con el intervalo dado."""
+        ...
+
+    def listar(
+        self,
+        sillon_id: int | None = None,
+        fecha_desde: str | None = None,
+        fecha_hasta: str | None = None,
+    ) -> list[BloqueoSillon]:
+        """Recupera la lista de bloqueos registrados aplicando filtros opcionales."""
+        ...
+
+    def obtener_por_id(self, bloqueo_id: int) -> BloqueoSillon | None:
+        """Recupera un bloqueo por su identificador único dentro del tenant."""
+        ...
+
+    def eliminar(self, bloqueo_id: int) -> bool:
+        """Elimina un bloqueo por su identificador. Retorna True si existía y fue eliminado."""
+        ...
+

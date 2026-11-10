@@ -53,6 +53,15 @@ class RepositorioTurnosEnMemoria:
         self._turnos.append(turno)
         return turno
 
+    def actualizar_reprogramacion(self, turno: Turno) -> Turno:
+        """Actualiza un turno existente en memoria preservando su id."""
+        for indice, registrado in enumerate(self._turnos):
+            if turno.id is not None and registrado.id == turno.id:
+                self._turnos[indice] = turno
+                return turno
+        self._turnos.append(turno)
+        return turno
+
     def obtener_por_id(self, turno_id: int) -> Turno | None:
         """Recupera un turno por su ID en memoria."""
         for turno in self._turnos:
@@ -92,6 +101,7 @@ class RepositorioTurnosEnMemoria:
         hora_fin: str,
         profesional: Profesional,
         sillon: Sillon,
+        excluir_turno_id: int | None = None,
     ) -> list[Turno]:
         """Filtra turnos activos que solapan temporalmente con el intervalo solicitado."""
         inicio = _horas_a_minutos(hora_inicio)
@@ -99,6 +109,8 @@ class RepositorioTurnosEnMemoria:
         candidatos: list[Turno] = []
 
         for turno_existente in self._turnos:
+            if excluir_turno_id is not None and turno_existente.id == excluir_turno_id:
+                continue
             if turno_existente.fecha != fecha:
                 continue
             if turno_existente.estado not in ESTADOS_ACTIVOS:
@@ -113,3 +125,23 @@ class RepositorioTurnosEnMemoria:
             ):
                 candidatos.append(turno_existente)
         return candidatos
+
+    def buscar_activos_por_sillon(
+        self,
+        sillon_id: int,
+        fecha_hora_inicio: str,
+        fecha_hora_fin: str,
+    ) -> list[Turno]:
+        """Devuelve turnos activos asignados al sillón en el intervalo dado (RP-07)."""
+        candidatos: list[Turno] = []
+        for t in self._turnos:
+            if t.estado not in ESTADOS_ACTIVOS:
+                continue
+            if t.sillon.id != sillon_id and t.sillon.nombre != str(sillon_id):
+                continue
+            t_inicio = f"{t.fecha} {t.hora_inicio}"
+            t_fin = f"{t.fecha} {t.hora_fin}"
+            if t_inicio < fecha_hora_fin and t_fin > fecha_hora_inicio:
+                candidatos.append(t)
+        return candidatos
+

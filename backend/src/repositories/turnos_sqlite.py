@@ -94,6 +94,50 @@ class RepositorioTurnosSqlite:
                 self._conexion.commit()
                 return turno
 
+    def actualizar_reprogramacion(self, turno: Turno) -> Turno:
+        """Actualiza fecha, horario y recursos de un turno existente de forma atómica dentro del tenant."""
+        if turno.id is None:
+            raise ValueError("El turno debe tener un ID para ser reprogramado")
+
+        profesional_id = (
+            turno.profesional.id
+            if turno.profesional.id is not None
+            else self._repo_profesionales.resolver_id(turno.profesional.nombre)
+        )
+        sillon_id = (
+            turno.sillon.id
+            if turno.sillon.id is not None
+            else self._repo_sillones.resolver_id(turno.sillon.nombre)
+        )
+
+        fecha_hora_inicio = f"{turno.fecha} {turno.hora_inicio}"
+        fecha_hora_fin = f"{turno.fecha} {turno.hora_fin}"
+
+        self._conexion.execute(
+            """
+            UPDATE turno
+               SET fecha_hora_inicio = ?,
+                   fecha_hora_fin = ?,
+                   profesional_id = ?,
+                   sillon_id = ?
+             WHERE id = ? AND tenant_id = ?
+            """,
+            (
+                fecha_hora_inicio,
+                fecha_hora_fin,
+                profesional_id,
+                sillon_id,
+                turno.id,
+                self._tenant_id,
+            ),
+        )
+        self._conexion.commit()
+        return replace(
+            turno,
+            profesional=replace(turno.profesional, id=profesional_id),
+            sillon=replace(turno.sillon, id=sillon_id),
+        )
+
     def _fila_a_turno(self, fila: sqlite3.Row | tuple) -> Turno:
         """Convierte una fila de la consulta SQL a la entidad Turno."""
         f_inicio = fila["fecha_hora_inicio"] if isinstance(fila, sqlite3.Row) else fila[1]
@@ -190,6 +234,7 @@ class RepositorioTurnosSqlite:
         hora_fin: str,
         profesional: Profesional,
         sillon: Sillon,
+        excluir_turno_id: int | None = None,
     ) -> list[Turno]:
         """Consulta en SQL los turnos activos en conflicto potencial (design D5, RN-04, D-07)."""
         prof_id = self._repo_profesionales.resolver_id(profesional.nombre)
@@ -216,6 +261,7 @@ class RepositorioTurnosSqlite:
                AND (t.profesional_id = ? OR t.sillon_id = ?)
                AND t.fecha_hora_inicio < ?
                AND t.fecha_hora_fin > ?
+               AND (? IS NULL OR t.id != ?)
              ORDER BY t.id
         """
 
@@ -226,35 +272,46 @@ class RepositorioTurnosSqlite:
             sil_id,
             nuevo_fin,
             nuevo_inicio,
+            excluir_turno_id,
+            excluir_turno_id,
         )
 
         filas = self._conexion.execute(sql, parametros).fetchall()
+        return [self._fila_a_turno(fila) for fila in filas]
 
-        candidatos: list[Turno] = []
-        for fila in filas:
-            f_inicio = fila["fecha_hora_inicio"] if isinstance(fila, sqlite3.Row) else fila[1]
-            f_fin = fila["fecha_hora_fin"] if isinstance(fila, sqlite3.Row) else fila[2]
-            estado = fila["estado"] if isinstance(fila, sqlite3.Row) else fila[3]
-            p_id = fila["profesional_id"] if isinstance(fila, sqlite3.Row) else fila[4]
-            p_nom = fila["profesional_nombre"] if isinstance(fila, sqlite3.Row) else fila[5]
-            s_id = fila["sillon_id"] if isinstance(fila, sqlite3.Row) else fila[6]
-            s_nom = fila["sillon_nombre"] if isinstance(fila, sqlite3.Row) else fila[7]
-            pac_nom = fila["paciente_nombre"] if isinstance(fila, sqlite3.Row) else fila[8]
-            t_id = fila["id"] if isinstance(fila, sqlite3.Row) else fila[0]
+    def buscar_activos_por_sillon(
+        self,
+        sillon_id: int,
+        fecha_hora_inicio: str,
+        fecha_hora_fin: str,
+    ) -> list[Turno]:
+        """Devuelve turnos activos asignados al sillón en el intervalo dado (RP-07)."""
+        estados_placeholder = ", ".join("?" for _ in ESTADOS_ACTIVOS)
+        estados_valores = tuple(ESTADOS_ACTIVOS)
 
-            f_part, h_inicio = f_inicio.split(" ")
-            _, h_fin = f_fin.split(" ")
+        sql = f"""
+            SELECT t.id, t.fecha_hora_inicio, t.fecha_hora_fin, t.estado,
+                   p.id AS profesional_id, p.nombre AS profesional_nombre,
+                   s.id AS sillon_id, s.nombre AS sillon_nombre,
+                   pac.nombre AS paciente_nombre
+              FROM turno t
+              JOIN profesional p ON t.profesional_id = p.id
+              JOIN sillon s ON t.sillon_id = s.id
+              JOIN paciente pac ON t.paciente_id = pac.id
+             WHERE t.tenant_id = ?
+               AND t.estado IN ({estados_placeholder})
+               AND t.sillon_id = ?
+               AND t.fecha_hora_inicio < ?
+               AND t.fecha_hora_fin > ?
+             ORDER BY t.id
+        """
+        parametros = (
+            self._tenant_id,
+            *estados_valores,
+            sillon_id,
+            fecha_hora_fin,
+            fecha_hora_inicio,
+        )
+        filas = self._conexion.execute(sql, parametros).fetchall()
+        return [self._fila_a_turno(fila) for fila in filas]
 
-            candidatos.append(
-                Turno(
-                    id=t_id,
-                    profesional=Profesional(nombre=p_nom, id=p_id),
-                    sillon=Sillon(nombre=s_nom, id=s_id),
-                    fecha=f_part,
-                    hora_inicio=h_inicio,
-                    hora_fin=h_fin,
-                    paciente=pac_nom,
-                    estado=estado,
-                )
-            )
-        return candidatos
