@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Turno, Profesional, Sillon, Paciente, TurnoCrearPeticion, ReprogramarTurnoPeticion } from '../types';
+import {
+  Turno,
+  Profesional,
+  Sillon,
+  Paciente,
+  Bloqueo,
+  TurnoCrearPeticion,
+  ReprogramarTurnoPeticion,
+} from '../types';
 import {
   listarTurnos,
   crearTurno,
@@ -9,10 +17,11 @@ import {
   completarTurno,
   reprogramarTurno,
 } from '../api/turnos';
-import { listarProfesionales, listarSillones } from '../api/recursos';
+import { listarProfesionales, listarSillones, listarBloqueos } from '../api/recursos';
 import { listarPacientes } from '../api/pacientes';
 import { FiltrosAgenda, FiltrosAgendaValores } from '../components/FiltrosAgenda';
 import { TarjetaTurno } from '../components/TarjetaTurno';
+import { GrillaMatricial, RecursoColumna } from '../components/GrillaMatricial';
 import { ModalNuevoTurno } from '../components/ModalNuevoTurno';
 import { ModalReprogramarTurno } from '../components/ModalReprogramarTurno';
 
@@ -26,15 +35,24 @@ export const Agenda: React.FC = () => {
   );
   const [sillonId, setSillonId] = useState<number | null>(null);
 
+  const [modoVista, setModoVista] = useState<'lista' | 'matriz'>('lista');
+  const [tipoAgrupacionMatriz, setTipoAgrupacionMatriz] = useState<'sillon' | 'profesional'>('sillon');
+
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [profesionales, setProfesionales] = useState<Profesional[]>([]);
   const [sillones, setSillones] = useState<Sillon[]>([]);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [bloqueos, setBloqueos] = useState<Bloqueo[]>([]);
 
   const [cargando, setCargando] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const [modalNuevoAbierto, setModalNuevoAbierto] = useState<boolean>(false);
+  const [slotPreseleccionado, setSlotPreseleccionado] = useState<{
+    hora?: string;
+    sillon?: string;
+    profesional?: string;
+  }>({});
   const [turnoAReprogramar, setTurnoAReprogramar] = useState<Turno | null>(null);
 
   useEffect(() => {
@@ -68,18 +86,22 @@ export const Agenda: React.FC = () => {
     };
   }, []);
 
-  const cargarTurnos = useCallback(async () => {
+  const cargarTurnosYBloqueos = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
-      const data = await listarTurnos({
-        fecha,
-        profesional_id: profesionalId ?? undefined,
-        sillon_id: sillonId ?? undefined,
-      });
-      // Orden cronológico por hora_inicio
-      const ordenados = [...data].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+      const [turnosData, bloqueosData] = await Promise.all([
+        listarTurnos({
+          fecha,
+          profesional_id: profesionalId ?? undefined,
+          sillon_id: sillonId ?? undefined,
+        }),
+        listarBloqueos({ fecha_desde: fecha, fecha_hasta: fecha }).catch(() => []),
+      ]);
+
+      const ordenados = [...turnosData].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
       setTurnos(ordenados);
+      setBloqueos(bloqueosData);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al consultar turnos';
       setError(msg);
@@ -89,8 +111,8 @@ export const Agenda: React.FC = () => {
   }, [fecha, profesionalId, sillonId]);
 
   useEffect(() => {
-    cargarTurnos();
-  }, [cargarTurnos]);
+    cargarTurnosYBloqueos();
+  }, [cargarTurnosYBloqueos]);
 
   const handleFiltrosChange = (nuevos: FiltrosAgendaValores) => {
     setFecha(nuevos.fecha);
@@ -104,7 +126,7 @@ export const Agenda: React.FC = () => {
     if (turno.id === null) return;
     try {
       await confirmarTurno(turno.id);
-      await cargarTurnos();
+      await cargarTurnosYBloqueos();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'No se pudo confirmar el turno';
       setError(msg);
@@ -115,7 +137,7 @@ export const Agenda: React.FC = () => {
     if (turno.id === null) return;
     try {
       await cancelarTurno(turno.id);
-      await cargarTurnos();
+      await cargarTurnosYBloqueos();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'No se pudo cancelar el turno';
       setError(msg);
@@ -126,7 +148,7 @@ export const Agenda: React.FC = () => {
     if (turno.id === null) return;
     try {
       await completarTurno(turno.id);
-      await cargarTurnos();
+      await cargarTurnosYBloqueos();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'No se pudo completar el turno';
       setError(msg);
@@ -135,12 +157,27 @@ export const Agenda: React.FC = () => {
 
   const handleCrearTurno = async (datos: TurnoCrearPeticion) => {
     await crearTurno(datos);
-    await cargarTurnos();
+    await cargarTurnosYBloqueos();
   };
 
   const handleReprogramarTurno = async (turnoId: number, datos: ReprogramarTurnoPeticion) => {
     await reprogramarTurno(turnoId, datos);
-    await cargarTurnos();
+    await cargarTurnosYBloqueos();
+  };
+
+  const handleAbrirNuevoTurnoManual = () => {
+    setSlotPreseleccionado({});
+    setModalNuevoAbierto(true);
+  };
+
+  const handleSlotVacioClick = (recurso: RecursoColumna, hora: string) => {
+    if (esRolProfesional) return;
+    setSlotPreseleccionado({
+      hora,
+      sillon: recurso.tipo === 'sillon' ? recurso.nombre : undefined,
+      profesional: recurso.tipo === 'profesional' ? recurso.nombre : undefined,
+    });
+    setModalNuevoAbierto(true);
   };
 
   return (
@@ -153,15 +190,43 @@ export const Agenda: React.FC = () => {
           </p>
         </div>
 
-        {!esRolProfesional && (
-          <button
-            type="button"
-            onClick={() => setModalNuevoAbierto(true)}
-            className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-colors"
-          >
-            + Nuevo Turno
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Switch de modo de visualización */}
+          <div className="inline-flex rounded-lg border border-slate-300 bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setModoVista('lista')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                modoVista === 'lista'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Lista
+            </button>
+            <button
+              type="button"
+              onClick={() => setModoVista('matriz')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                modoVista === 'matriz'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Matriz
+            </button>
+          </div>
+
+          {!esRolProfesional && (
+            <button
+              type="button"
+              onClick={handleAbrirNuevoTurnoManual}
+              className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-colors text-sm"
+            >
+              + Nuevo Turno
+            </button>
+          )}
+        </div>
       </div>
 
       <FiltrosAgenda
@@ -192,6 +257,20 @@ export const Agenda: React.FC = () => {
 
       {cargando ? (
         <div className="py-12 text-center text-slate-500 font-medium">Cargando turnos...</div>
+      ) : modoVista === 'matriz' ? (
+        <GrillaMatricial
+          fecha={fecha}
+          turnos={turnos}
+          profesionales={profesionales}
+          sillones={sillones}
+          bloqueos={bloqueos}
+          tipoAgrupacion={tipoAgrupacionMatriz}
+          onCambiarAgrupacion={setTipoAgrupacionMatriz}
+          onTurnoClick={(t) => setTurnoAReprogramar(t)}
+          onSlotVacioClick={handleSlotVacioClick}
+          esRolProfesional={esRolProfesional}
+          profesionalIdActual={profesionalId}
+        />
       ) : turnos.length === 0 ? (
         <div className="bg-white rounded-lg p-8 border border-slate-200 text-center text-slate-500 shadow-sm">
           <p className="text-base font-medium">No hay turnos registrados para los filtros seleccionados.</p>
@@ -219,6 +298,9 @@ export const Agenda: React.FC = () => {
         sillones={sillones}
         pacientes={pacientes}
         profesionalPreseleccionadoId={esRolProfesional ? profesionalId : undefined}
+        horaInicioInicial={slotPreseleccionado.hora}
+        sillonInicial={slotPreseleccionado.sillon}
+        profesionalInicial={slotPreseleccionado.profesional}
         onClose={() => setModalNuevoAbierto(false)}
         onSubmit={handleCrearTurno}
       />

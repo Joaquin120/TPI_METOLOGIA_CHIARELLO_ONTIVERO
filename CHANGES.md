@@ -423,7 +423,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ## FASE 5 — Segunda etapa (post-MVP)
 
 ### [C-13] `agenda-matricial`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-10 en `openspec/changes/archive/2026-11-10-c-13-agenda-matricial/` (specs en `openspec/specs/cliente-agenda-turnos/spec.md`)
 - **Scope**: Vista matricial profesionales × sillones por franja horaria (`F-06`)
   - Grilla con estados por color e indicación explícita de intentos de solapamiento
   - Filtros por fecha y recurso; resolución de granularidad de la grilla (abierta en `flows.md` §7.2)
@@ -533,7 +533,7 @@ Orden de ejecución planificado (pendiente):
 | C-10 | bloqueo-sillon | 3 · Operación de la agenda | C-09 | ALTO | `[ ]` |
 | C-11 | frontend-shell | 4 · Frontend web | C-05, C-06, C-07 | BAJO | `[x]` |
 | C-12 | agenda-turnos-ui | 4 · Frontend web | C-11 | MEDIO | `[x]` |
-| C-13 | agenda-matricial | 5 · Segunda etapa | C-12 | MEDIO | `[ ]` |
+| C-13 | agenda-matricial | 5 · Segunda etapa | C-12 | MEDIO | `[x]` |
 | C-14 | notificaciones-whatsapp | 5 · Segunda etapa | C-05 | ALTO | `[ ]` |
 | C-15 | lista-espera | 5 · Segunda etapa | C-14 | MEDIO | `[ ]` |
 

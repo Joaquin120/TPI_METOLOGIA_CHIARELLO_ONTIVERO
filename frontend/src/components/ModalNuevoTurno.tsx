@@ -8,6 +8,9 @@ export interface ModalNuevoTurnoProps {
   sillones: Sillon[];
   pacientes?: Paciente[];
   profesionalPreseleccionadoId?: number | null;
+  horaInicioInicial?: string;
+  sillonInicial?: string;
+  profesionalInicial?: string;
   onClose: () => void;
   onSubmit: (datos: TurnoCrearPeticion) => Promise<void>;
 }
@@ -19,6 +22,9 @@ export const ModalNuevoTurno: React.FC<ModalNuevoTurnoProps> = ({
   sillones,
   pacientes = [],
   profesionalPreseleccionadoId,
+  horaInicioInicial,
+  sillonInicial,
+  profesionalInicial,
   onClose,
   onSubmit,
 }) => {
@@ -36,19 +42,41 @@ export const ModalNuevoTurno: React.FC<ModalNuevoTurnoProps> = ({
       setFecha(fechaInicial);
       setErrorLocal(null);
       setCargando(false);
+      setPaciente('');
 
-      if (profesionalPreseleccionadoId) {
+      const inicio = horaInicioInicial || '09:00';
+      setHoraInicio(inicio);
+      const [h, m] = inicio.split(':').map(Number);
+      const finMin = h * 60 + m + 30;
+      const finH = Math.floor(finMin / 60);
+      const finM = finMin % 60;
+      setHoraFin(`${String(finH).padStart(2, '0')}:${String(finM).padStart(2, '0')}`);
+
+      if (profesionalInicial) {
+        setProfesional(profesionalInicial);
+      } else if (profesionalPreseleccionadoId) {
         const prof = profesionales.find((p) => p.id === profesionalPreseleccionadoId);
         if (prof) setProfesional(prof.nombre);
       } else if (profesionales.length > 0) {
         setProfesional(profesionales[0].nombre);
       }
 
-      if (sillones.length > 0) {
+      if (sillonInicial) {
+        setSillon(sillonInicial);
+      } else if (sillones.length > 0) {
         setSillon(sillones[0].nombre);
       }
     }
-  }, [isOpen, fechaInicial, profesionalPreseleccionadoId, profesionales, sillones]);
+  }, [
+    isOpen,
+    fechaInicial,
+    profesionalPreseleccionadoId,
+    profesionales,
+    sillones,
+    horaInicioInicial,
+    sillonInicial,
+    profesionalInicial,
+  ]);
 
   if (!isOpen) return null;
 

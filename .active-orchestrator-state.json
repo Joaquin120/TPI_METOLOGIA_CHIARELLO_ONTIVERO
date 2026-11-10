@@ -116,15 +116,15 @@
     "status": "missing"
   },
   "active_change": {
-    "name": "c-12-agenda-turnos-ui",
-    "roadmap_id": "C-12",
-    "roadmap_slug": "agenda-turnos-ui",
-    "path": "openspec/changes/archive/2026-11-10-c-12-agenda-turnos-ui",
+    "name": "c-13-agenda-matricial",
+    "roadmap_id": "C-13",
+    "roadmap_slug": "agenda-matricial",
+    "path": "openspec/changes/archive/2026-11-10-c-13-agenda-matricial",
     "schema": "spec-driven",
     "phase": "archive",
     "status": "archived",
-    "tests": "52 frontend tests passed (Vitest), build OK (Vite+TS)",
-    "next_action": "/opsx:propose C-13 agenda-matricial",
+    "tests": "65 frontend tests passed (Vitest), build OK (Vite+TS)",
+    "next_action": "/opsx:propose C-14 notificaciones-whatsapp",
     "recorded_at": "2026-11-10"
   }
 }

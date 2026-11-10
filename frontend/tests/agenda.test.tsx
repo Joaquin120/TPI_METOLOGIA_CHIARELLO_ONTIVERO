@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { Agenda } from '../src/pages/Agenda';
 import * as TurnosApi from '../src/api/turnos';
 import * as RecursosApi from '../src/api/recursos';
@@ -195,5 +195,41 @@ describe('Página Agenda (Integración y Flujos Operativos)', () => {
     await waitFor(() => {
       expect(crearSpy).toHaveBeenCalled();
     });
+  });
+
+  it('permite alternar entre vista de lista y vista matricial', async () => {
+    renderAgendaConUsuario(usuarioAdmin);
+    await screen.findByText('Juan Perez');
+
+    const btnMatriz = screen.getByRole('button', { name: /^matriz$/i });
+    fireEvent.click(btnMatriz);
+
+    expect(await screen.findByRole('columnheader', { name: /sillón principal/i })).toBeInTheDocument();
+    expect(screen.getByText(/vista matricial de atención/i)).toBeInTheDocument();
+
+    const btnLista = screen.getByRole('button', { name: /^lista$/i });
+    fireEvent.click(btnLista);
+
+    expect(await screen.findByText('Juan Perez')).toBeInTheDocument();
+  });
+
+  it('clic en celda libre de la matriz abre modal preseleccionando recurso y franja', async () => {
+    renderAgendaConUsuario(usuarioAdmin);
+    await screen.findByText('Juan Perez');
+
+    fireEvent.click(screen.getByRole('button', { name: /^matriz$/i }));
+    await screen.findByRole('columnheader', { name: /sillón principal/i });
+
+    const slotLibre = screen.getByTestId('slot-Sillón Principal-08:00');
+    fireEvent.click(slotLibre);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+
+    const inputInicio = within(dialog).getByLabelText(/hora inicio/i) as HTMLInputElement;
+    expect(inputInicio.value).toBe('08:00');
+
+    const selectSillon = within(dialog).getByLabelText(/sillón/i) as HTMLSelectElement;
+    expect(selectSillon.value).toBe('Sillón Principal');
   });
 });
