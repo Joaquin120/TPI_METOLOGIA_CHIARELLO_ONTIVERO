@@ -6,7 +6,15 @@ El dominio no importa `sqlite3` ni conoce SQL ni detalles de infraestructura.
 
 from typing import Protocol, runtime_checkable
 
-from src.domain.models import BloqueoSillon, MensajeWhatsApp, Profesional, ResultadoEnvio, Sillon, Turno
+from src.domain.models import (
+    BloqueoSillon,
+    EntradaListaEspera,
+    MensajeWhatsApp,
+    Profesional,
+    ResultadoEnvio,
+    Sillon,
+    Turno,
+)
 
 
 @runtime_checkable
@@ -106,6 +114,38 @@ class ProveedorWhatsApp(Protocol):
 
     def enviar_mensaje(self, mensaje: MensajeWhatsApp) -> ResultadoEnvio:
         """Despacha un mensaje por WhatsApp devolviendo el resultado del envío."""
+        ...
+
+
+@runtime_checkable
+class PuertoListaEspera(Protocol):
+    """Puerto de persistencia para la gestión de lista de espera (C-15, F-08)."""
+
+    def guardar(self, entrada: EntradaListaEspera) -> EntradaListaEspera:
+        """Persiste una nueva entrada en lista de espera."""
+        ...
+
+    def actualizar(self, entrada: EntradaListaEspera) -> EntradaListaEspera:
+        """Actualiza el estado u observaciones de una entrada existente."""
+        ...
+
+    def obtener_por_id(self, entrada_id: int) -> EntradaListaEspera | None:
+        """Recupera una entrada por su identificador único dentro del tenant."""
+        ...
+
+    def listar(
+        self,
+        fecha: str | None = None,
+        profesional_nombre: str | None = None,
+        estado: str | None = None,
+    ) -> list[EntradaListaEspera]:
+        """Recupera la lista de entradas aplicando filtros opcionales."""
+        ...
+
+    def buscar_candidatos(
+        self, fecha: str, profesional_nombre: str | None = None
+    ) -> list[EntradaListaEspera]:
+        """Recupera candidatos pendientes priorizados por orden cronológico (FIFO)."""
         ...
 
 

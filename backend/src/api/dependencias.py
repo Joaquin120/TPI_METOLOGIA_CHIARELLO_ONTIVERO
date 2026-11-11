@@ -24,11 +24,13 @@ from src.api.seguridad import (
     TokenInvalidoError,
     decodificar_token_acceso,
 )
+from src.domain.lista_espera import ServicioListaEspera
 from src.domain.notificaciones import NotificacionesService
 from src.domain.services import ServicioTurnos
 from src.infrastructure.database import abrir_conexion
 from src.repositories.auditoria_sqlite import RepositorioAuditoriaSqlite
 from src.repositories.bloqueos_sqlite import RepositorioBloqueosSqlite
+from src.repositories.lista_espera_sqlite import RepositorioListaEsperaSqlite
 from src.repositories.metricas_sqlite import RepositorioMetricasSqlite
 from src.repositories.pacientes_sqlite import RepositorioPacientesSqlite
 from src.repositories.recursos import (
@@ -151,6 +153,8 @@ def contexto_turnos(
             raise ErrorTenantNoResuelto(f"El tenant {tenant_id} no existe")
         repo_turnos = RepositorioTurnosSqlite(conexion, tenant_id=tenant_id)
         repo_bloqueos = RepositorioBloqueosSqlite(conexion, tenant_id=tenant_id)
+        repo_espera = RepositorioListaEsperaSqlite(conexion, tenant_id=tenant_id)
+        servicio_espera = ServicioListaEspera(puerto=repo_espera)
         proveedor_whatsapp = getattr(request.app.state, "proveedor_whatsapp", None)
         servicio_notificaciones = (
             NotificacionesService(proveedor=proveedor_whatsapp)
@@ -161,6 +165,7 @@ def contexto_turnos(
             repositorio=repo_turnos,
             puerto_bloqueos=repo_bloqueos,
             servicio_notificaciones=servicio_notificaciones,
+            servicio_lista_espera=servicio_espera,
         )
         yield ContextoTurnos(servicio=servicio, tenant_id=tenant_id)
     finally:
@@ -248,6 +253,42 @@ get_repositorio_bloqueos = obtener_repositorio_bloqueos
 requerir_roles = requerir_rol
 get_repositorio_metricas = obtener_repositorio_metricas
 get_repositorio_auditoria = obtener_repositorio_auditoria
+
+
+@dataclass(frozen=True)
+class ContextoListaEspera:
+    """Servicio y repositorios asociados a la lista de espera (C-15, F-08)."""
+
+    servicio: ServicioListaEspera
+    repositorio: RepositorioListaEsperaSqlite
+    conexion: sqlite3.Connection
+    tenant_id: int
+
+
+def contexto_lista_espera(
+    request: Request,
+    usuario: ContextoUsuario = Depends(obtener_usuario_actual),
+) -> Iterator[ContextoListaEspera]:
+    """Dependencia de FastAPI: conexión y servicio de lista de espera para el tenant autenticado."""
+    conexion = abrir_conexion(request.app.state.ruta_db)
+    try:
+        tenant_id = usuario.tenant_id
+        fila = conexion.execute(
+            "SELECT 1 FROM tenant WHERE id = ?", (tenant_id,)
+        ).fetchone()
+        if fila is None:
+            raise ErrorTenantNoResuelto(f"El tenant {tenant_id} no existe")
+        repo = RepositorioListaEsperaSqlite(conexion, tenant_id=tenant_id)
+        servicio = ServicioListaEspera(puerto=repo)
+        yield ContextoListaEspera(
+            servicio=servicio,
+            repositorio=repo,
+            conexion=conexion,
+            tenant_id=tenant_id,
+        )
+    finally:
+        conexion.close()
+
 
 
 

@@ -19,6 +19,7 @@ from src.api.routers import (
     auth,
     bloqueos,
     health,
+    lista_espera,
     metricas,
     pacientes,
     recursos,
@@ -81,5 +82,6 @@ def create_app(
     app.include_router(auditoria.router, prefix=PREFIJO_API)
     app.include_router(bloqueos.router, prefix=PREFIJO_API)
     app.include_router(webhooks.router, prefix=PREFIJO_API)
+    app.include_router(lista_espera.router, prefix=PREFIJO_API)
 
     return app

@@ -23,6 +23,7 @@ from src.domain.models import (
     Sillon,
     Turno,
 )
+from src.domain.lista_espera import ServicioListaEspera
 from src.domain.notificaciones import NotificacionesService
 from src.domain.puertos import PuertoBloqueos, PuertoTurnos
 
@@ -45,10 +46,12 @@ class ServicioTurnos:
         repositorio: PuertoTurnos,
         puerto_bloqueos: PuertoBloqueos | None = None,
         servicio_notificaciones: NotificacionesService | None = None,
+        servicio_lista_espera: ServicioListaEspera | None = None,
     ) -> None:
         self._repositorio: PuertoTurnos = repositorio
         self._puerto_bloqueos: PuertoBloqueos | None = puerto_bloqueos
         self._servicio_notificaciones: NotificacionesService | None = servicio_notificaciones
+        self._servicio_lista_espera: ServicioListaEspera | None = servicio_lista_espera
 
     def agendar_turno(
         self,
@@ -350,8 +353,41 @@ class ServicioTurnos:
         return self._transicionar(turno, "confirmar")
 
     def cancelar(self, turno: Turno) -> Turno:
-        """PENDIENTE | CONFIRMADO → CANCELADO (RN-03). Libera profesional y sillón."""
-        return self._transicionar(turno, "cancelar")
+        """PENDIENTE | CONFIRMADO → CANCELADO (RN-03). Libera profesional y sillón.
+
+        Detección proactiva de lista de espera (RN-04, PA-14): busca el primer paciente prioritario
+        y despacha una notificación de vacante sin bloquear la operación si falla.
+        """
+        turno_cancelado = self._transicionar(turno, "cancelar")
+
+        if self._servicio_lista_espera is not None:
+            try:
+                prof_nombre = turno.profesional.nombre if turno.profesional else None
+                candidatos = self._servicio_lista_espera.buscar_candidatos(
+                    fecha=turno.fecha,
+                    profesional_nombre=prof_nombre,
+                )
+                if candidatos:
+                    prioritario = candidatos[0]
+                    if self._servicio_notificaciones is not None:
+                        self._servicio_notificaciones.notificar_vacante_disponible(
+                            paciente=prioritario.paciente_nombre,
+                            telefono=prioritario.paciente_telefono,
+                            profesional=turno.profesional.nombre if turno.profesional else "el profesional",
+                            fecha=turno.fecha,
+                            hora_inicio=turno.hora_inicio,
+                            turno_id=turno.id,
+                        )
+                    if prioritario.id is not None:
+                        self._servicio_lista_espera.marcar_notificado(prioritario.id)
+            except Exception as err:
+                logger.error(
+                    "Error no bloqueante al gestionar lista de espera tras cancelación de turno: %s",
+                    err,
+                    exc_info=True,
+                )
+
+        return turno_cancelado
 
     def completar(self, turno: Turno) -> Turno:
         """CONFIRMADO → COMPLETADO (RN-03)."""

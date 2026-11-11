@@ -23,6 +23,7 @@ def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
             "004_pacientes.sql",
             "005_auditoria.sql",
             "006_bloqueos.sql",
+            "008_lista_espera.sql",
         ]
         # Segunda corrida: las migraciones ya registradas no se vuelven a aplicar.
         assert migrar(conexion) == []
@@ -42,6 +43,7 @@ def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
             "usuario",
             "auditoria",
             "bloqueo_sillon",
+            "lista_espera",
         } <= tablas
         assert "schema_migrations" in tablas
 
@@ -55,6 +57,7 @@ def test_esquema_crea_las_tablas_esperadas(tmp_path) -> None:
             "004_pacientes.sql",
             "005_auditoria.sql",
             "006_bloqueos.sql",
+            "008_lista_espera.sql",
         ]
 
         # Índice de solapamiento (tenant_id, fecha_hora_inicio) — design D4.

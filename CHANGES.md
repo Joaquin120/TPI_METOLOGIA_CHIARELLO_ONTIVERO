@@ -456,7 +456,7 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 ---
 
 ### [C-15] `lista-espera`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` completado — archivado 2026-11-10 en `openspec/changes/archive/2026-11-10-c-15-lista-espera/` (specs en `openspec/specs/lista-espera/spec.md`)
 - **Scope**: Lista de espera y reasignación ante cancelaciones (`F-08`)
   - Modelo de registro de interés por horario ocupado; reglas de prioridad (resolver `PA-14`)
   - Al cancelar un turno (`C-01`/`C-05`), notificar al primero de la lista; reasignación aceptada valida el doble candado
@@ -472,48 +472,94 @@ Paso │ Agente A (Backend Core)        │ Agente B (Backend Aux)      │ Agen
 
 ## Historial de versiones
 
-### [Unreleased] — Roadmap MVP (prioridad: camino crítico)
+### [Unreleased] — Roadmap MVP y Post-MVP ✔ COMPLETADO AL 100%
 
-Orden de ejecución planificado (pendiente):
+Orden de ejecución planificado (todos los changes completados y archivados bajo metodología SDD):
 
-1. ~~`C-01` **cancelacion-y-estados-turno**~~ ✔ completado (2026-11-03)
-2. ~~`C-02` **persistencia-sqlite**~~ ✔ completado (2026-11-03)
-3. ~~`C-03` **capa-api-desacoplada**~~ ✔ completado (2026-11-05)
-4. ~~`C-04` auth-rbac-tenancy~~ ✔ completado (2026-11-05)
-5. ~~`C-05` endpoints-turnos~~ ✔ completado · ~~`C-06` endpoints-recursos~~ ✔ completado · ~~`C-07` gestion-pacientes~~ ✔ completado (2026-11-09)
-6. `C-08` reprogramacion-turno · `C-09` admin-recursos-crud · `C-11` frontend-shell
-7. `C-10` bloqueo-sillon · `C-12` agenda-turnos-ui — **cierre del MVP**
+1. ~~`C-01` **cancelacion-y-estados-turno**~~ ✔ completado y archivado (2026-11-03)
+2. ~~`C-02` **persistencia-sqlite**~~ ✔ completado y archivado (2026-11-03)
+3. ~~`C-03` **capa-api-desacoplada**~~ ✔ completado y archivado (2026-11-04)
+4. ~~`C-04` **auth-rbac-tenancy**~~ ✔ completado y archivado (2026-11-05)
+5. ~~`C-05` **endpoints-turnos**~~ ✔ completado · ~~`C-06` **endpoints-recursos**~~ ✔ completado · ~~`C-07` **gestion-pacientes**~~ ✔ completado (2026-11-08 / 2026-11-09)
+6. ~~`C-08` **reportes-metricas**~~ ✔ completado · ~~`C-08b` **reprogramacion-turno**~~ ✔ completado · ~~`C-09` **auditoria-trazabilidad**~~ ✔ completado · ~~`C-09b` **admin-recursos-crud**~~ ✔ completado · ~~`C-11` **frontend-shell**~~ ✔ completado (2026-11-09 / 2026-11-10)
+7. ~~`C-10` **bloqueo-sillon**~~ ✔ completado · ~~`C-12` **agenda-turnos-ui**~~ ✔ completado — **cierre formal del MVP** (2026-11-10)
+8. ~~`C-13` **agenda-matricial**~~ ✔ completado · ~~`C-14` **notificaciones-whatsapp**~~ ✔ completado · ~~`C-15` **lista-espera**~~ ✔ completado — **cierre formal Post-MVP / Release 1.0.0** (2026-11-10)
 
-> Cadena prioritaria: **cancelación y estados de turnos → persistencia en BD → desacouple de backend** (`C-01 → C-02 → C-03`).
+> Cadena prioritaria MVP: **cancelación y estados de turnos → persistencia en BD → desacople de backend** (`C-01 → C-02 → C-03 → C-04 → C-05 → C-11 → C-12`).
 > Segunda etapa (post-MVP): `C-13` agenda-matricial, `C-14` notificaciones-whatsapp, `C-15` lista-espera.
 
-### [0.7.0] — 2026-11-09 — Gestión de pacientes ✔ COMPLETADO
+---
 
-- **Patient Management & Isolation (F-11, RN-05, RN-06):** Migración `004_pacientes.sql` con columna `telefono` e índice compuesto `idx_paciente_tenant_dni` (`UNIQUE(tenant_id, dni)`).
-- **Core Domain & Persistence:** Entidad pura `Paciente` en `src/domain/models.py` y adaptador `RepositorioPacientesSqlite` en `src/repositories/pacientes_sqlite.py` con aislamiento estricto por `tenant_id`.
-- **API & Error Envelope:** Endpoints `POST /api/v1/pacientes` (201) y `GET /api/v1/pacientes` (200) con RBAC (Recepcionista/Admin para alta; Profesional para consulta), validación regex `^\d{8}$` en `dni`, y envelope unificado ante conflictos `PACIENTE_DUPLICADO` (409) y validaciones (422).
-- **`2026-11-09-c-07-gestion-pacientes`** — ✔️ Archivado. Spec creada en `openspec/specs/gestionar-pacientes/spec.md` (4 requirements ADDED) y cambio archivado. Suite verde: 189 tests pasados, 100% de cobertura en módulos de pacientes.
-- **Skill propia integrada:** `.atl/skills/generador-datos-pacientes-sinteticos.md` — validación formal de privacidad y fixtures sintéticos.
+### [1.0.0] — 2026-11-10 — Release Final: Culminación del Roadmap y Fase 5 (Post-MVP) ✔ COMPLETADO
 
-### [0.2.0] — 2026-10-15 — Crear turno sin solapamientos ✔ COMPLETADO
+- **Vista Matricial de Agenda ([C-13] `agenda-matricial`):**
+  - Implementación en frontend de matriz bidimensional interactiva de profesionales × sillones por granularidad horaria (`F-06`, `flows.md` §7).
+  - Indicadores visuales de estados (`PENDIENTE`, `CONFIRMADO`, `CANCELADO`, `COMPLETADO`) y detección proactiva de solapamientos.
+  - Specs sincronizadas en `openspec/specs/cliente-agenda-turnos/spec.md`. Archivado en `openspec/changes/archive/2026-11-10-c-13-agenda-matricial/`.
+- **Notificaciones y Webhooks de WhatsApp ([C-14] `notificaciones-whatsapp`):**
+  - Módulo desacoplado `NotificacionesService` y puerto `ProveedorWhatsApp` (`F-07`, `DP-09`, `PA-11`).
+  - Despacho no bloqueante de avisos de alta de turno, recordatorios preventivos de proximidad y vacantes de sobreturno.
+  - Webhook interactivo (`POST /api/v1/webhooks/whatsapp`) para confirmación y cancelación directa por parte del paciente con auditoría (`RN-04`).
+  - Specs sincronizadas en `openspec/specs/notificaciones-whatsapp/spec.md`. Archivado en `openspec/changes/archive/2026-11-10-c-14-notificaciones-whatsapp/`.
+- **Lista de Espera y Reasignación Ante Cancelaciones ([C-15] `lista-espera`):**
+  - Entidad `EntradaListaEspera`, puerto abstracto `PuertoListaEspera`, migración `008_lista_espera.sql` y adaptador `RepositorioListaEsperaSqlite` con orden FIFO cronológico estricto (`F-08`, `PA-14`).
+  - Detección reactiva de vacantes en `ServicioTurnos.cancelar` con notificación inmediata al primer candidato en cola sin bloquear la cancelación.
+  - Endpoints REST `POST /api/v1/lista-espera`, `GET /api/v1/lista-espera`, `GET /api/v1/lista-espera/candidatos`, `PATCH /api/v1/lista-espera/{id}/cancelar` y `POST /api/v1/lista-espera/{id}/asignar` con validación de doble candado físico (`RN-01`, `RN-08`), RBAC y registro de auditoría (`ASIGNAR_TURNO_LISTA_ESPERA`).
+  - Specs sincronizadas en `openspec/specs/lista-espera/spec.md`. Archivado en `openspec/changes/archive/2026-11-10-c-15-lista-espera/`.
+- **Consolidación Final del Sistema:**
+  - Suite de validación en estado verde absoluto: **348 tests de backend (`pytest`)** y **65 tests de frontend (`vitest`)** sin regresiones.
+  - **16 especificaciones canónicas** consolidadas y validadas formalmente con `openspec validate --specs`.
+  - Cero dependencias prohibidas en el núcleo de dominio (`backend/src/domain/`).
 
-- **Core Domain Entities:** Modelado de `Profesional`, `Sillon`, `Paciente` y `Turno`.
-- **Overlap Validation Engine:** Algoritmo de validación bidireccional que previene reservas duplicadas para el mismo profesional o el mismo sillón odontológico en intervalos semiabiertos `[T_inicio, T_fin)`.
-- **Automated Test Suite:** Pruebas unitarias e integrales que aseguran el cumplimiento del "doble candado" sin excepciones.
-- **`2026-10-15-crear-turno-sin-solapamientos`** — ✔️ Archivado. Specs sincronizados en `openspec/specs/crear-turno/spec.md` (2 requirements ADDED) y cambio movido a `openspec/changes/archive/2026-10-15-crear-turno-sin-solapamientos/`. Suite verde: 8 tests pasados, 100% cobertura.
+### [0.12.0] — 2026-11-10 — Cierre del MVP: Operación de Agenda en Frontend Web ✔ COMPLETADO
+
+- **Frontend Shell ([C-11] `frontend-shell`):** Arquitectura React + Vite + TypeScript con React Router v6, tokens de diseño CSS unificados (`design-system/tokens.css`), autenticación basada en JWT (`AuthContext`) con refresco y almacenamiento seguro, rutas protegidas por rol (`ProtectedRoute`) y layout responsivo con feedback accesible. Archivado en `openspec/changes/archive/2026-11-10-c-11-frontend-shell/`. Specs en `openspec/specs/cliente-web-shell/spec.md`.
+- **UI Operativa de Agenda ([C-12] `agenda-turnos-ui`):** Componente interactivo de grilla de turnos (`F-02`), modal de agendamiento con validación de recursos (`F-01`), modal de reprogramación in-place (`F-09`), transiciones de estado asistenciales (`F-03`) y tratamiento de errores de solapamiento (`409 Conflict`) con mensajes de negocio legibles para recepción. Archivado en `openspec/changes/archive/2026-11-10-c-12-agenda-turnos-ui/`. Specs en `openspec/specs/cliente-agenda-turnos/spec.md`.
+
+### [0.10.0] — 2026-11-10 — Bloqueos de sillones por mantenimiento y salvaguardas ✔ COMPLETADO
+
+- **Mantenimiento de Sillones ([C-10] `bloqueo-sillon`):** Entidad `BloqueoSillon` desacoplada del ciclo de vida médico del paciente (`F-12`, `RN-07`, `PA-15`). Migración `006_bloqueos.sql` con tabla `bloqueo_sillon` e índices multi-tenant.
+- **Salvaguarda Operativa (RP-07):** Validación bidireccional que impide bloquear sillones con turnos activos preexistentes (`ConflictoTurnosExistentesError` / HTTP 409) y bloquea agendamientos o reprogramaciones hacia sillones inhabilitados (`SillonBloqueadoError` / HTTP 409). Endpoints `/api/v1/bloqueos` protegidos para rol `Administrador`. Archivado en `openspec/changes/archive/2026-11-10-c-10-bloqueo-sillon/`. Specs en `openspec/specs/bloquear-sillon/spec.md`.
+
+### [0.9.0] — 2026-11-10 — Administración de recursos y auditoría clínica ✔ COMPLETADO
+
+- **Bitácora Inmutable ([C-09] `auditoria-trazabilidad`):** Migración `005_auditoria.sql` con tabla `auditoria` y modelo puro `RegistroAuditoria`. Registro transparente de mutaciones clínicas y administrativas acotadas estrictamente al tenant. Endpoint `GET /api/v1/auditoria` exclusivo para administradores. Archivado en `openspec/changes/archive/2026-11-09-c-09-auditoria-trazabilidad/`. Specs en `openspec/specs/auditoria-trazabilidad/spec.md`.
+- **Gestión de Recursos Clínicos ([C-09b] `admin-recursos-crud`):** Métodos de persistencia y endpoints REST `POST/PUT /api/v1/profesionales` y `POST/PUT /api/v1/sillones` (`F-10`) con control estricto de unicidad por tenant y RBAC exclusivo para `Administrador`. Archivado en `openspec/changes/archive/2026-11-10-c-09b-admin-recursos-crud/`. Specs en `openspec/specs/administrar-recursos/spec.md`.
+
+### [0.8.0] — 2026-11-09 — Reprogramación de turnos y métricas operativas ✔ COMPLETADO
+
+- **Analítica Operativa ([C-08] `reportes-metricas`):** Endpoints `GET /api/v1/metricas/turnos` y `GET /api/v1/metricas/recursos` para cálculo de tasas de ocupación, conteo de estados y cancelación segura sin división por cero. Archivado en `openspec/changes/archive/2026-11-09-c-08-reportes-metricas/`. Specs en `openspec/specs/reportes-metricas/spec.md`.
+- **Reprogramación In-Place ([C-08b] `reprogramacion-turno`):** Método `ServicioTurnos.reprogramar` preservando id, paciente y estado activo (`F-09`, `RP-03`). Doble candado con precedencia `RN-09` (`SolapamientoProfesionalError` prioritario) y exclusión de turno propio para desplazamientos en la misma franja. Endpoint `PATCH /api/v1/turnos/{id}/reprogramar` con validación horaria. Archivado en `openspec/changes/archive/2026-11-09-c-08b-reprogramacion-turno/`. Specs en `openspec/specs/reprogramar-turno/spec.md`.
+
+### [0.7.0] — 2026-11-09 — Gestión de pacientes y endpoints de agenda ✔ COMPLETADO
+
+- **Patient Management & Isolation ([C-07] `gestion-pacientes`):** Migración `004_pacientes.sql` con columna `telefono` e índice compuesto `idx_paciente_tenant_dni` (`UNIQUE(tenant_id, dni)`). Adaptador `RepositorioPacientesSqlite` y endpoints `POST/GET /api/v1/pacientes` con RBAC. Archivado en `openspec/changes/archive/2026-11-09-c-07-gestion-pacientes/`. Specs en `openspec/specs/gestionar-pacientes/spec.md`.
+- **Endpoints de Recursos ([C-06] `endpoints-recursos`):** Endpoints `GET /api/v1/profesionales` y `GET /api/v1/sillones` con soporte de filtrado `solo_activos` y aislamiento multitenant. Archivado en `openspec/changes/archive/2026-11-09-c-06-endpoints-recursos/`. Specs en `openspec/specs/consultar-recursos/spec.md`.
+- **Endpoints de Turnos ([C-05] `endpoints-turnos`):** Endpoints `POST /api/v1/turnos`, `GET /api/v1/turnos` y `PATCH /api/v1/turnos/{id}/confirmar|cancelar|completar` con validación de solapamiento y RBAC. Archivado en `openspec/changes/archive/2026-11-08-c-05-endpoints-turnos/`. Specs en `openspec/specs/exponer-api-turnos/spec.md`.
+
+### [0.6.0] — 2026-11-05 — Autenticación, RBAC y Aislamiento Multitenant ✔ COMPLETADO
+
+- **Autenticación Segura ([C-04] `auth-rbac-tenancy`):** Migración `002_auth.sql` con tabla `usuario`. Autenticación vía JWT Bearer tokens con claims `sub`, `tenant_id`, `rol` y `email`. Hashing criptográfico con PBKDF2/bcrypt. Dependencias FastAPI `obtener_usuario_actual` y `requerir_rol` (`Administrador`, `Recepcionista`, `Profesional`). Archivado en `openspec/changes/archive/2026-11-05-c-04-auth-rbac-tenancy/`. Specs en `openspec/specs/autenticacion-autorizacion/spec.md`.
+
+### [0.5.0] — 2026-11-04 — Capa API desacoplada con FastAPI ✔ COMPLETADO
+
+- **Arquitectura Hexagonal ([C-03] `capa-api-desacoplada`):** Factoría `create_app`, routers desacoplados, endpoint de salud `GET /api/v1/health` y envelope unificado de excepciones `{"error": {"code": "...", "message": "..."}}`. Archivado en `openspec/changes/archive/2026-11-04-c-03-api-fastapi/`.
+
+### [0.4.0] — 2026-11-03 — Persistencia en SQLite con repositorios ✔ COMPLETADO
+
+- **Persistencia Aislada ([C-02] `persistencia-sqlite`):** Migración inicial `001_init.sql` con claves foráneas habilitadas, tablas `tenant`, `profesional`, `sillon`, `paciente` y `turno`. Repositorios SQLite que implementan puertos abstractos del dominio filtrando obligatoriamente por `tenant_id`. Archivado en `openspec/changes/archive/2026-11-03-c-02-persistencia-sqlite/`. Specs en `openspec/specs/persistir-turnos/spec.md`.
 
 ### [0.3.0] — 2026-11-03 — Cancelación y estados del turno ✔ COMPLETADO
 
-- **State Machine (RN-03):** Constantes `PENDIENTE`, `CONFIRMADO`, `CANCELADO`, `COMPLETADO` en `src/domain/models.py` y lista blanca `_TRANSICIONES` en `ServicioTurnos`, con `confirmar()`, `cancelar()` y `completar()` que rechazan cualquier transición no listada con la nueva `TransicionInvalidaError`. Estados `CANCELADO`/`COMPLETADO` absorbentes.
-- **Resource Release (RN-04):** Filtro único `ESTADOS_ACTIVOS` en `agendar_turno()` gobierna ambas ramas de validación (profesional **y** sillón), de modo que un turno cancelado o completado deja de bloquear recursos en el intervalo semiabierto `[T_inicio, T_fin)` (D-07) sin perderse del historial.
-- **`2026-11-03-c-01-cancelacion-y-estados-turno`** — ✔️ Archivado. Spec creada en `openspec/specs/gestionar-estados-turno/spec.md` (3 requirements ADDED, escenarios en `GIVEN/WHEN/THEN`) y cambio movido a `openspec/changes/archive/2026-11-03-c-01-cancelacion-y-estados-turno/`. Suite verde: 25 tests pasados, 100% cobertura. `openspec validate --all`: 2 passed, 0 failed.
-- **Skill propia creada:** `.atl/skills/domain-state-matrix-validator.md` — matriz clasificada de transiciones RN-03/RN-04 y los 3 escenarios Spec-Driven obligatorios.
+- **Máquina de Estados ([C-01] `cancelacion-y-estados-turno`):** Constantes `PENDIENTE`, `CONFIRMADO`, `CANCELADO`, `COMPLETADO` en `src/domain/models.py` y lista blanca `_TRANSICIONES` en `ServicioTurnos`. Liberación automática de recursos (`RN-04`): turnos inactivos no bloquean profesional ni sillón en el intervalo `[T_inicio, T_fin)`. Archivado en `openspec/changes/archive/2026-11-03-c-01-cancelacion-y-estados-turno/`. Specs en `openspec/specs/gestionar-estados-turno/spec.md`.
 
-### [0.1.0] — Discovery & Foundation Phase
+### [0.2.0] — 2026-10-15 — Crear turno sin solapamientos ✔ COMPLETADO
 
-- Complete Discovery report with 15 analyzed competitors.
-- Manual verification of 5 real market sources.
-- Domain knowledge base initialization (`knowledge-base/`).
+- **Doble Candado de Recursos:** Modelado de entidades del dominio y algoritmo bidireccional de solapamiento simultáneo e independiente de profesional y sillón. Archivado en `openspec/changes/archive/2026-10-15-crear-turno-sin-solapamientos/`. Specs en `openspec/specs/crear-turno/spec.md`.
+
+### [0.1.0] — 2026-10-01 — Discovery & Foundation Phase ✔ COMPLETADO
+
+- **Investigación de Mercado y Fundamentos:** Informe de Discovery con análisis de 15 competidores directos, verificación de fuentes y base de conocimiento inicial en `knowledge-base/` (arquitectura, reglas de negocio, modelos de datos y decisiones de diseño).
 
 ---
 
@@ -523,20 +569,25 @@ Orden de ejecución planificado (pendiente):
 |----|--------|------|--------------|------------|--------|
 | C-01 | cancelacion-y-estados-turno | 0 · Núcleo del dominio | ninguna | MEDIO | `[x]` |
 | C-02 | persistencia-sqlite | 0 · Núcleo del dominio | C-01 | CRITICO | `[x]` |
-| C-03 | capa-api-desacoplada | 0 · Núcleo del dominio | C-02 | ALTO | `[ ]` |
-| C-04 | auth-rbac-tenancy | 1 · Acceso y tenancy | C-03 | CRITICO | `[ ]` |
-| C-05 | endpoints-turnos | 2 · Endpoints de agenda | C-04 | MEDIO | `[ ]` |
-| C-06 | endpoints-recursos | 2 · Endpoints de agenda | C-04 | BAJO | `[ ]` |
+| C-03 | capa-api-desacoplada | 0 · Núcleo del dominio | C-02 | ALTO | `[x]` |
+| C-04 | auth-rbac-tenancy | 1 · Acceso y tenancy | C-03 | CRITICO | `[x]` |
+| C-05 | endpoints-turnos | 2 · Endpoints de agenda | C-04 | MEDIO | `[x]` |
+| C-06 | endpoints-recursos | 2 · Endpoints de agenda | C-04 | BAJO | `[x]` |
 | C-07 | gestion-pacientes | 2 · Endpoints de agenda | C-04 | BAJO | `[x]` |
-| C-08 | reprogramacion-turno | 3 · Operación de la agenda | C-05 | MEDIO | `[ ]` |
-| C-09 | admin-recursos-crud | 3 · Operación de la agenda | C-06 | BAJO | `[ ]` |
-| C-10 | bloqueo-sillon | 3 · Operación de la agenda | C-09 | ALTO | `[ ]` |
+| C-08 | reportes-metricas | 3 · Operación de la agenda | C-04, C-05, C-06 | BAJO | `[x]` |
+| C-08b | reprogramacion-turno | 3 · Operación de la agenda | C-05 | MEDIO | `[x]` |
+| C-09 | auditoria-trazabilidad | 3 · Operación de la agenda | C-04, C-05, C-07 | BAJO | `[x]` |
+| C-09b | admin-recursos-crud | 3 · Operación de la agenda | C-06 | BAJO | `[x]` |
+| C-10 | bloqueo-sillon | 3 · Operación de la agenda | C-09 | ALTO | `[x]` |
 | C-11 | frontend-shell | 4 · Frontend web | C-05, C-06, C-07 | BAJO | `[x]` |
 | C-12 | agenda-turnos-ui | 4 · Frontend web | C-11 | MEDIO | `[x]` |
 | C-13 | agenda-matricial | 5 · Segunda etapa | C-12 | MEDIO | `[x]` |
-| C-14 | notificaciones-whatsapp | 5 · Segunda etapa | C-05 | ALTO | `[ ]` |
-| C-15 | lista-espera | 5 · Segunda etapa | C-14 | MEDIO | `[ ]` |
+| C-14 | notificaciones-whatsapp | 5 · Segunda etapa | C-05 | ALTO | `[x]` |
+| C-15 | lista-espera | 5 · Segunda etapa | C-14 | MEDIO | `[x]` |
 
-**Primer change recomendado**: `C-01` (`cancelacion-y-estados-turno`) — inicia el camino crítico MVP con la máquina de estados y la liberación de recursos por cancelación.
+---
 
-Para arrancar: `/opsx:propose C-01-cancelacion-y-estados-turno`
+> **CERTIFICACIÓN DE CIERRE DEL ROADMAP**:
+> Todos los cambios planificados en el Roadmap del proyecto (15/15 changes, de C-01 a C-15 incluyendo extensiones C-08b y C-09b) han sido implementados, auditados con trazabilidad integral y formalmente archivados bajo la metodología **Spec-Driven Development (SDD)** con OpenSpec.
+> Suite de validación en estado verde absoluto: **348 tests de backend (`pytest`)** y **65 tests de frontend (`vitest`)** pasando al 100%, con **16 especificaciones maestras** consolidadas en `openspec/specs/`.
+

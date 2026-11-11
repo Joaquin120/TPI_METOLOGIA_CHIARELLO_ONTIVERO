@@ -113,3 +113,33 @@ class NotificacionesService:
             logger.error("Error al despachar recordatorio por WhatsApp: %s", err, exc_info=True)
             return ResultadoEnvio(exitoso=False, error=str(err))
 
+    def notificar_vacante_disponible(
+        self,
+        paciente: str,
+        telefono: str | None,
+        profesional: str,
+        fecha: str,
+        hora_inicio: str,
+        turno_id: int | None = None,
+    ) -> ResultadoEnvio | None:
+        """Despacha un aviso de vacante liberada a un paciente en lista de espera (C-15, F-08, RN-04)."""
+        if not telefono or not telefono.strip():
+            return None
+
+        contenido = (
+            f"Hola {paciente}, se ha liberado un turno con {profesional} el {fecha} a las {hora_inicio}. "
+            f"Comunícate para confirmar tu turno."
+        )
+        mensaje = MensajeWhatsApp(
+            destinatario_telefono=telefono.strip(),
+            contenido=contenido,
+            tipo=TipoMensajeWhatsApp.VACANTE_LISTA_ESPERA,
+            turno_id=turno_id,
+        )
+
+        try:
+            return self._proveedor.enviar_mensaje(mensaje)
+        except Exception as err:
+            logger.error("Error al despachar aviso de vacante por WhatsApp: %s", err, exc_info=True)
+            return ResultadoEnvio(exitoso=False, error=str(err))
+

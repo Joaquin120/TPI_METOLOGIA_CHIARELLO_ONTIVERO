@@ -116,15 +116,15 @@
     "status": "missing"
   },
   "active_change": {
-    "name": "c-14-notificaciones-whatsapp",
-    "roadmap_id": "C-14",
-    "roadmap_slug": "notificaciones-whatsapp",
-    "path": "openspec/changes/archive/2026-11-10-c-14-notificaciones-whatsapp",
+    "name": "c-15-lista-espera",
+    "roadmap_id": "C-15",
+    "roadmap_slug": "lista-espera",
+    "path": "openspec/changes/archive/2026-11-10-c-15-lista-espera",
     "schema": "spec-driven",
     "phase": "archive",
     "status": "archived",
-    "tests": "322 backend tests passed (pytest), 65 frontend tests passed (vitest)",
-    "next_action": "/opsx:propose c-15-lista-espera",
+    "tests": "348 backend passed, 65 frontend passed (100% green)",
+    "next_action": "none (roadmap changes C-13, C-14, C-15 all archived)",
     "recorded_at": "2026-11-10"
   }
 }

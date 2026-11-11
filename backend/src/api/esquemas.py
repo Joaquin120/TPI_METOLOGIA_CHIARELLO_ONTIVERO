@@ -10,7 +10,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
-from src.domain.models import BloqueoSillon, Paciente, Profesional, RegistroAuditoria, Sillon, Turno
+from src.domain.models import BloqueoSillon, EntradaListaEspera, Paciente, Profesional, RegistroAuditoria, Sillon, Turno
 
 # `YYYY-MM-DD` (ISO-8601, fecha completa).
 PATRON_FECHA = r"^\d{4}-\d{2}-\d{2}$"
@@ -26,6 +26,8 @@ PATRON_TELEFONO = r"^\+?[0-9\s\-\(\)]{7,20}$"
 TextoRequerido = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 DniSintetico = Annotated[str, Field(pattern=PATRON_DNI, description="DNI ficticio de 8 dígitos")]
 TelefonoSintetico = Annotated[str, Field(pattern=PATRON_TELEFONO, description="Formato de teléfono")]
+FechaSintetica = Annotated[str, Field(pattern=PATRON_FECHA, description="Fecha YYYY-MM-DD")]
+HoraSintetica = Annotated[str, Field(pattern=PATRON_HORA, description="Hora HH:MM")]
 
 
 class TurnoCrear(BaseModel):
@@ -377,6 +379,63 @@ class WebhookWhatsAppRespuesta(BaseModel):
     turno_id: int
     estado_actual: str
     accion_procesada: str
+
+
+class EntradaListaEsperaCrear(BaseModel):
+    """Cuerpo de solicitud para registrar una entrada en lista de espera (C-15, F-08)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    paciente_nombre: TextoRequerido
+    paciente_telefono: TelefonoSintetico
+    fecha_deseada: FechaSintetica
+    motivo: TextoRequerido
+    profesional_nombre: str | None = None
+    franja_horaria: str | None = None
+
+
+class EntradaListaEsperaRespuesta(BaseModel):
+    """Respuesta para entradas en lista de espera."""
+
+    id: int
+    tenant_id: int
+    paciente_nombre: str
+    paciente_telefono: str
+    fecha_deseada: str
+    motivo: str
+    profesional_nombre: str | None = None
+    franja_horaria: str | None = None
+    estado: str
+    creado_en: str | None = None
+
+    @classmethod
+    def desde_dominio(cls, entrada: EntradaListaEspera) -> "EntradaListaEsperaRespuesta":
+        if entrada.id is None:
+            raise ValueError("La entrada debe tener un id asignado")
+        return cls(
+            id=entrada.id,
+            tenant_id=entrada.tenant_id,
+            paciente_nombre=entrada.paciente_nombre,
+            paciente_telefono=entrada.paciente_telefono,
+            fecha_deseada=entrada.fecha_deseada,
+            motivo=entrada.motivo,
+            profesional_nombre=entrada.profesional_nombre,
+            franja_horaria=entrada.franja_horaria,
+            estado=entrada.estado,
+            creado_en=entrada.creado_en,
+        )
+
+
+class AsignarTurnoListaEspera(BaseModel):
+    """Cuerpo de solicitud para asignar un turno definitivo desde lista de espera (C-15)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    profesional_id: int
+    sillon_id: int
+    fecha: FechaSintetica
+    hora_inicio: HoraSintetica
+    hora_fin: HoraSintetica
 
 
 

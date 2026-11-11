@@ -96,6 +96,7 @@ class TipoMensajeWhatsApp:
     RECORDATORIO = "RECORDATORIO"
     CONFIRMACION = "CONFIRMACION"
     CANCELACION = "CANCELACION"
+    VACANTE_LISTA_ESPERA = "VACANTE_LISTA_ESPERA"
 
 
 @dataclass(frozen=True)
@@ -116,6 +117,31 @@ class ResultadoEnvio:
     exitoso: bool
     mensaje_id: str | None = None
     error: str | None = None
+
+
+class EstadoListaEspera:
+    """Estados del ciclo de vida de una entrada en lista de espera (C-15, F-08)."""
+
+    PENDIENTE = "PENDIENTE"
+    NOTIFICADO = "NOTIFICADO"
+    ASIGNADO = "ASIGNADO"
+    CANCELADO = "CANCELADO"
+
+
+@dataclass(frozen=True)
+class EntradaListaEspera:
+    """Entrada de paciente en lista de espera ante vacantes o sobreturnos."""
+
+    paciente_nombre: str
+    paciente_telefono: str
+    fecha_deseada: str
+    motivo: str
+    tenant_id: int = 1
+    profesional_nombre: str | None = None
+    franja_horaria: str | None = None
+    estado: str = EstadoListaEspera.PENDIENTE
+    creado_en: str | None = None
+    id: int | None = None
 
 
 

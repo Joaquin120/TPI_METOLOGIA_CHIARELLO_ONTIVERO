@@ -136,6 +136,13 @@ class ErrorBloqueoNoEncontrado(Exception):
         super().__init__(mensaje)
 
 
+class ErrorEntradaListaEsperaNoEncontrada(Exception):
+    """La entrada en lista de espera no existe en el tenant resuelto (C-15)."""
+
+    def __init__(self, mensaje: str = "Entrada en lista de espera no encontrada") -> None:
+        super().__init__(mensaje)
+
+
 
 def respuesta_error(status_code: int, code: str, message: str) -> JSONResponse:
     """Construye la respuesta JSON con el envelope de error único."""
@@ -278,6 +285,12 @@ def _manejar_bloqueo_no_encontrado(
     return respuesta_error(404, "BLOQUEO_NO_ENCONTRADO", str(exc))
 
 
+def _manejar_entrada_lista_espera_no_encontrada(
+    _request: Request, exc: ErrorEntradaListaEsperaNoEncontrada
+) -> JSONResponse:
+    return respuesta_error(404, "ENTRADA_LISTA_ESPERA_NO_ENCONTRADA", str(exc))
+
+
 def registrar_manejadores_de_errores(app: FastAPI) -> None:
     """Registra en `app` los handlers del envelope (reutilizable por la factoría)."""
     app.add_exception_handler(
@@ -321,5 +334,8 @@ def registrar_manejadores_de_errores(app: FastAPI) -> None:
     )
     app.add_exception_handler(
         ErrorBloqueoNoEncontrado, _manejar_bloqueo_no_encontrado
+    )
+    app.add_exception_handler(
+        ErrorEntradaListaEsperaNoEncontrada, _manejar_entrada_lista_espera_no_encontrada
     )
 
